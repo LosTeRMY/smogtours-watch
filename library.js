@@ -148,7 +148,7 @@ function renderMatches(players) {
 
   const head = selected
     ? ['Date', 'Tier', 'Opponent', 'Result', 'Replay']
-    : ['Date', 'Tier', 'Player 1', 'Player 2', 'Winner', 'Replay'];
+    : ['Date', 'Tier', 'Player 1', 'Player 2', 'Replay'];
   $('thead').replaceChildren(el('tr', {}, ...head.map((h) => el('th', {}, h))));
 
   const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
@@ -177,7 +177,6 @@ function renderMatches(players) {
       el('td', {}, el('span', { class: 'tier' }, m.format || '?')),
       el('td', {}, pbtn(m.p1)),
       el('td', {}, pbtn(m.p2)),
-      el('td', {}, m.status === 'saved' ? (m.tie ? 'Draw' : (m.winner || '?')) : '—'),
       el('td', {}, statusCell(m)),
     );
   });
