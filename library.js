@@ -114,7 +114,7 @@ function resultFor(m, pid) {
   if (m.tie) return { text: 'Draw', cls: 'tie' };
   if (!m.winner) return { text: '?', cls: '' };
   const won = toID(m.winner) === pid;
-  return { text: (won ? 'W' : 'L') + (m.forfeit ? ' (ff)' : ''), cls: won ? 'win' : 'loss' };
+  return { text: won ? 'W' : 'L', cls: won ? 'win' : 'loss' };
 }
 
 function renderMatches(players) {
