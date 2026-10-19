@@ -20,7 +20,6 @@ async function render() {
   const s = await getSettings();
   const { status = {}, log = [] } = await chrome.storage.local.get(['status', 'log']);
 
-  $('enabled').checked = s.enabled;
   $('notif').checked = s.notifications;
   $('pollNow').disabled = !s.enabled;
 
@@ -45,11 +44,13 @@ async function render() {
     $('status').textContent = status.connected ? `connected · ${status.liveCount || 0} live` : 'disconnected';
     $('status').className = `status ${status.connected ? 'ok' : 'off'}`;
   }
+  $('status').title = s.enabled ? 'Pause monitoring' : 'Resume monitoring';
   $('meta').textContent = `Last poll: ${ago(status.lastPollAt)}`;
   $('log').textContent = log.slice(-60).join('\n');
 }
 
-$('enabled').onchange = (e) => saveSettings({ enabled: e.target.checked });
+// La pastille sert d'interrupteur : pause / reprise de la surveillance.
+$('status').onclick = async () => saveSettings({ enabled: !(await getSettings()).enabled });
 $('notif').onchange = (e) => saveSettings({ notifications: e.target.checked });
 
 $('addTier').onsubmit = async (e) => {

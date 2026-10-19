@@ -69,9 +69,10 @@ body.popup { width: 340px; }
 .block { padding: 12px; border-bottom: 1px solid var(--line); }
 .block.row, .row { display: flex; gap: 8px; }
 .block.row .primary { flex: 1; }
-.status { margin-left: auto; font-size: var(--fs-label); padding: 2px 8px; border-radius: 99px; background: var(--line); }
+.status { height: auto; border: 0; color: inherit; margin-left: auto; font-size: var(--fs-label); padding: 2px 8px; border-radius: 99px; background: var(--line); }
 .status.ok { background: var(--win-soft); color: var(--win); }
 .status.off { background: var(--loss-soft); color: var(--loss); }
+.status:hover { filter: brightness(1.08); }
 
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; }
 .switch { appearance: none; width: 34px; height: 20px; padding: 0; border-radius: 99px; background: var(--line); position: relative; cursor: pointer; border: 0; transition: background .15s; }
