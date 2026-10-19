@@ -38,8 +38,8 @@ async function render() {
   if (!s.tiers.length) $('tiers').innerHTML = '<span class="hint">No tier: nothing is being watched.</span>';
 
   if (!s.enabled) {
-    $('statusText').textContent = 'paused';
-    $('status').className = 'status paused';
+    $('statusText').textContent = 'offline';
+    $('status').className = 'status off paused';
   } else {
     $('statusText').textContent = status.connected ? 'connected' : 'offline';
     $('status').className = `status ${status.connected ? 'ok' : 'off'}`;

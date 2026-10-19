@@ -73,7 +73,7 @@ body.popup { width: 340px; }
 .status { position: relative; height: auto; border: 0; color: inherit; width: 82px; text-align: center; white-space: nowrap; font-size: var(--fs-label); padding: 2px 20px 2px 8px; border-radius: 99px; background: var(--line); transition: padding .15s, background .15s; }
 .status.ok { background: var(--win-soft); color: var(--win); }
 .status.off { background: var(--loss-soft); color: var(--loss); }
-.status.paused { color: var(--muted); padding: 2px 8px 2px 20px; }
+.status.paused { padding: 2px 8px 2px 20px; }
 .status:hover { filter: brightness(1.08); }
 .status .knob { position: absolute; top: 50%; left: calc(100% - 15px); width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #0003; transition: left .15s; }
 .status.paused .knob { left: 3px; }
