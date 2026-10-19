@@ -6,7 +6,7 @@ const $ = (id) => document.getElementById(id);
 let matches = [];
 let selected = null; // id normalisé du joueur, ou null = tous
 let page = 1;
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 10;
 let playersKey = '';
 let tiersKey = '';
 
