@@ -169,6 +169,7 @@ function renderMatches(players) {
       );
     }
     const isWinner = (name) => !!name && !!m.winner && toID(m.winner) === toID(name);
+    const isLoser = (name) => !!name && !!m.winner && !isWinner(name);
     const pbtn = (name) => name ? el('button', {
       class: 'plink' + (isWinner(name) ? ' won' : ''),
       onclick: () => select(toID(name)),
@@ -176,8 +177,8 @@ function renderMatches(players) {
     return el('tr', {},
       el('td', { class: 'num' }, date),
       el('td', {}, el('span', { class: 'tier' }, m.format || '?')),
-      el('td', { class: isWinner(m.p1) ? 'winner' : null }, pbtn(m.p1)),
-      el('td', { class: isWinner(m.p2) ? 'winner' : null }, pbtn(m.p2)),
+      el('td', { class: isWinner(m.p1) ? 'winner' : isLoser(m.p1) ? 'loser' : null }, pbtn(m.p1)),
+      el('td', { class: isWinner(m.p2) ? 'winner' : isLoser(m.p2) ? 'loser' : null }, pbtn(m.p2)),
       el('td', {}, statusCell(m)),
     );
   });
