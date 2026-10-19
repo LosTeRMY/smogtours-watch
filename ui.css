@@ -77,8 +77,6 @@ body.popup { width: 340px; }
 .status:hover { filter: brightness(1.08); }
 .status .knob { position: absolute; top: 50%; left: calc(100% - 16px); width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #0003; transition: left .15s; }
 .status.paused .knob { left: 4px; }
-.live-count { font-size: var(--fs-label); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.live-count.on { color: var(--live); font-weight: 600; }
 
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; }
 .switch { appearance: none; width: 34px; height: 20px; padding: 0; border-radius: 99px; background: var(--line); position: relative; cursor: pointer; border: 0; transition: background .15s; }

@@ -41,15 +41,9 @@ async function render() {
     $('statusText').textContent = 'paused';
     $('status').className = 'status paused';
   } else {
-    $('statusText').textContent = status.connected ? 'connected' : 'offline';
+    $('statusText').textContent = status.connected ? `${status.liveCount || 0} live` : 'offline';
     $('status').className = `status ${status.connected ? 'ok' : 'off'}`;
   }
-
-  // Matchs en cours : masqué en pause ou hors ligne (chiffre non fiable).
-  const live = status.liveCount || 0;
-  $('liveCount').hidden = !(s.enabled && status.connected);
-  $('liveCount').textContent = live ? `● ${live} live` : '0 live';
-  $('liveCount').classList.toggle('on', live > 0);
   $('status').setAttribute('aria-checked', String(s.enabled));
   $('status').title = s.enabled ? 'Pause monitoring' : 'Resume monitoring';
   $('meta').textContent = `Last poll: ${ago(status.lastPollAt)}`;
