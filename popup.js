@@ -38,12 +38,13 @@ async function render() {
   if (!s.tiers.length) $('tiers').innerHTML = '<span class="hint">No tier: nothing is being watched.</span>';
 
   if (!s.enabled) {
-    $('status').textContent = 'paused';
-    $('status').className = 'status';
+    $('statusText').textContent = 'paused';
+    $('status').className = 'status paused';
   } else {
-    $('status').textContent = status.connected ? `connected · ${status.liveCount || 0} live` : 'disconnected';
+    $('statusText').textContent = status.connected ? `connected · ${status.liveCount || 0} live` : 'disconnected';
     $('status').className = `status ${status.connected ? 'ok' : 'off'}`;
   }
+  $('status').setAttribute('aria-checked', String(s.enabled));
   $('status').title = s.enabled ? 'Pause monitoring' : 'Resume monitoring';
   $('meta').textContent = `Last poll: ${ago(status.lastPollAt)}`;
   $('log').textContent = log.slice(-60).join('\n');
