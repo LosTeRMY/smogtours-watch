@@ -216,6 +216,23 @@ $('import').onchange = async (e) => {
   e.target.value = '';
 };
 
+// ---------- thème ----------
+// L'icône montre le mode vers lequel on bascule (icônes Lucide moon et sun-dim).
+const ICONS = {
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 4h.01"/><path d="M20 12h.01"/><path d="M12 20h.01"/><path d="M4 12h.01"/><path d="M17.657 6.343h.01"/><path d="M17.657 17.657h.01"/><path d="M6.343 17.657h.01"/><path d="M6.343 6.343h.01"/>',
+};
+function renderThemeButton() {
+  const dark = document.documentElement.dataset.theme === 'dark';
+  $('theme').innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${dark ? ICONS.sun : ICONS.moon}</svg>`;
+  $('theme').title = dark ? 'Passer en mode clair' : 'Passer en mode sombre';
+}
+$('theme').onclick = () => {
+  setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  renderThemeButton();
+};
+renderThemeButton();
+
 // ---------- événements ----------
 $('allBtn').onclick = () => { selected = null; renderAll(); };
 $('search').oninput = renderPlayers;

@@ -14,24 +14,23 @@
   --loss-soft: rgba(196, 55, 47, .16);
   --live-soft: rgba(217, 119, 6, .16);
   --radius: 8px;
-  color-scheme: light dark;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #15171b;
-    --panel: #1d2026;
-    --text: #e7e9ee;
-    --muted: #9aa3b2;
-    --line: #2c3038;
-    --accent: #6ea2ff;
-    --accent-soft: rgba(110, 162, 255, .16);
-    --win: #4cc483;
-    --loss: #f07167;
-    --live: #f4a340;
-    --win-soft: rgba(76, 196, 131, .16);
-    --loss-soft: rgba(240, 113, 103, .16);
-    --live-soft: rgba(244, 163, 64, .16);
-  }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #15171b;
+  --panel: #1d2026;
+  --text: #e7e9ee;
+  --muted: #9aa3b2;
+  --line: #2c3038;
+  --accent: #6ea2ff;
+  --accent-soft: rgba(110, 162, 255, .16);
+  --win: #4cc483;
+  --loss: #f07167;
+  --live: #f4a340;
+  --win-soft: rgba(76, 196, 131, .16);
+  --loss-soft: rgba(240, 113, 103, .16);
+  --live-soft: rgba(244, 163, 64, .16);
 }
 
 * { box-sizing: border-box; }
@@ -46,6 +45,9 @@ button, .btn, input, select {
   background: var(--panel); padding: 0 12px; height: 35px;
 }
 button, .btn { cursor: pointer; }
+.btn { display: inline-flex; align-items: center; }
+.icon-btn { width: 35px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.icon-btn svg { width: 18px; height: 18px; }
 button:hover, .btn:hover { border-color: var(--accent); }
 button:disabled { opacity: .5; cursor: default; }
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
