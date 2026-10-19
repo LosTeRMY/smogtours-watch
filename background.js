@@ -216,6 +216,7 @@ function notifyStart(roomid, format, p1, p2) {
     title: `${format} — match started`,
     message: `${p1 || '?'} vs ${p2 || '?'}`,
     contextMessage: 'smogtours · clic pour regarder',
+    silent: true,
   });
 }
 
