@@ -88,7 +88,7 @@ details[open] summary { margin-bottom: 8px; }
 .log { max-height: 180px; overflow: auto; font: 11px/1.4 ui-monospace, Menlo, Consolas, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; white-space: pre-wrap; word-break: break-all; margin: 8px 0 0; }
 
 /* ---------- bibliothèque ---------- */
-body.library { height: 100vh; display: flex; flex-direction: column; }
+body.library { height: 100vh; min-width: 1100px; min-height: 620px; display: flex; flex-direction: column; }
 .lib-bar { padding: 10px 16px; }
 .cols { flex: 1; display: grid; grid-template-columns: 280px 1fr; min-height: 0; }
 .players { border-right: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }

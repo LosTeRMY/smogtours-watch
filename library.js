@@ -277,6 +277,32 @@ $('theme').onclick = () => {
 };
 renderThemeButton();
 
+// ---------- taille fixe de la fenêtre (1100 × 620 de contenu) ----------
+const CONTENT_W = 1100;
+const CONTENT_H = 620;
+let fixed = null; // { id, width, height } : taille extérieure voulue
+
+async function fixWindowSize() {
+  const win = await chrome.windows.getCurrent();
+  if (win.type !== 'popup') return; // ouverte dans un onglet : rien à faire
+  fixed = {
+    id: win.id,
+    width: win.width + (CONTENT_W - innerWidth),
+    height: win.height + (CONTENT_H - innerHeight),
+  };
+  if (win.width !== fixed.width || win.height !== fixed.height) {
+    await chrome.windows.update(win.id, { width: fixed.width, height: fixed.height });
+  }
+}
+
+chrome.windows.onBoundsChanged.addListener((win) => {
+  if (!fixed || win.id !== fixed.id) return;
+  if (win.state === 'normal' && win.width === fixed.width && win.height === fixed.height) return;
+  chrome.windows.update(win.id, { state: 'normal', width: fixed.width, height: fixed.height });
+});
+
+fixWindowSize();
+
 // ---------- événements ----------
 $('allBtn').onclick = () => select(null);
 $('search').oninput = renderPlayers;

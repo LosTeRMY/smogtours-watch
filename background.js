@@ -250,7 +250,24 @@ chrome.storage.onChanged.addListener((changes) => {
   if (changes.settings) ensureRunning();
 });
 
+// Bibliothèque : une seule fenêtre dédiée. La taille exacte (1100 × 620 de contenu)
+// est corrigée par library.js une fois la fenêtre ouverte.
+async function openLibrary() {
+  const url = chrome.runtime.getURL('library.html');
+  const wins = await chrome.windows.getAll({ populate: true, windowTypes: ['popup'] });
+  const existing = wins.find((w) => w.tabs?.some((t) => t.url === url));
+  if (existing) {
+    await chrome.windows.update(existing.id, { focused: true, drawAttention: true });
+    return;
+  }
+  await chrome.windows.create({ url, type: 'popup', width: 1100, height: 620 });
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg?.type === 'openLibrary') {
+    openLibrary().then(() => sendResponse(true), () => sendResponse(false));
+    return true;
+  }
   if (msg?.type === 'pollNow') {
     ensureRunning().then(poll).then(() => sendResponse(true), () => sendResponse(false));
     return true;

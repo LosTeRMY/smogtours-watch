@@ -53,7 +53,10 @@ $('addTier').onsubmit = async (e) => {
   $('tierInput').value = '';
 };
 
-$('openLib').onclick = () => chrome.tabs.create({ url: chrome.runtime.getURL('library.html') });
+$('openLib').onclick = async () => {
+  await chrome.runtime.sendMessage({ type: 'openLibrary' });
+  window.close();
+};
 
 $('pollNow').onclick = async () => {
   $('pollNow').disabled = true;
