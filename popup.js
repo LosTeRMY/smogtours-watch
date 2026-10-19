@@ -41,7 +41,7 @@ async function render() {
     $('statusText').textContent = 'paused';
     $('status').className = 'status paused';
   } else {
-    $('statusText').textContent = status.connected ? `${status.liveCount || 0} live` : 'offline';
+    $('statusText').textContent = status.connected ? 'connected' : 'offline';
     $('status').className = `status ${status.connected ? 'ok' : 'off'}`;
   }
   $('status').setAttribute('aria-checked', String(s.enabled));
