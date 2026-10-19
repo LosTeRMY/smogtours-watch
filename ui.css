@@ -14,6 +14,10 @@
   --loss-soft: rgba(196, 55, 47, .16);
   --live-soft: rgba(217, 119, 6, .16);
   --radius: 8px;
+  --fs-title: 20px;
+  --fs-body: 13px;
+  --fs-secondary: 12px;
+  --fs-label: 11px;
   color-scheme: light;
 }
 :root[data-theme="dark"] {
@@ -35,9 +39,9 @@
 
 * { box-sizing: border-box; }
 /* Chrome injecte body { font-size: 75% } dans les pages d'extension sous Windows : on redéfinit police et taille. */
-body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--text); font: var(--fs-body)/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 h1, h2 { margin: 0; }
-h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 8px; }
+h2 { font-size: var(--fs-secondary); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 8px; }
 
 button, .btn, input, select {
   font: inherit; color: inherit;
@@ -57,7 +61,7 @@ input:focus, select:focus { outline: 2px solid var(--accent-soft); border-color:
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; }
 .brand img { width: 20px; height: 20px; }
 .spacer { flex: 1; }
-.meta, .hint { color: var(--muted); font-size: 12px; }
+.meta, .hint { color: var(--muted); font-size: var(--fs-secondary); }
 .hint { margin: 6px 0 0; }
 
 /* ---------- popup ---------- */
@@ -65,7 +69,7 @@ body.popup { width: 340px; }
 .block { padding: 12px; border-bottom: 1px solid var(--line); }
 .block.row, .row { display: flex; gap: 8px; }
 .block.row .primary { flex: 1; }
-.status { margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--line); }
+.status { margin-left: auto; font-size: var(--fs-label); padding: 2px 8px; border-radius: 99px; background: var(--line); }
 .status.ok { background: var(--win-soft); color: var(--win); }
 .status.off { background: var(--loss-soft); color: var(--loss); }
 
@@ -84,8 +88,8 @@ body.popup { width: 340px; }
 
 details summary { cursor: pointer; color: var(--muted); }
 details[open] summary { margin-bottom: 8px; }
-.field { display: grid; gap: 4px; margin: 8px 0; font-size: 12px; color: var(--muted); }
-.log { max-height: 180px; overflow: auto; font: 11px/1.4 ui-monospace, Menlo, Consolas, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; white-space: pre-wrap; word-break: break-all; margin: 8px 0 0; }
+.field { display: grid; gap: 4px; margin: 8px 0; font-size: var(--fs-secondary); color: var(--muted); }
+.log { max-height: 180px; overflow: auto; font: var(--fs-label)/1.4 ui-monospace, Menlo, Consolas, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; white-space: pre-wrap; word-break: break-all; margin: 8px 0 0; }
 
 /* ---------- bibliothèque ---------- */
 body.library { height: 100vh; min-width: 1100px; min-height: 620px; display: flex; flex-direction: column; }
@@ -100,20 +104,20 @@ body.library { height: 100vh; min-width: 1100px; min-height: 620px; display: fle
 .player.active { background: var(--accent-soft); }
 .player.all { border-bottom: 1px solid var(--line); font-weight: 600; padding: 10px 12px; }
 .player .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.player .count { min-width: 26px; text-align: center; font-size: 11px; padding: 1px 6px; border-radius: 99px; background: var(--line); font-variant-numeric: tabular-nums; }
+.player .count { min-width: 26px; text-align: center; font-size: var(--fs-label); padding: 1px 6px; border-radius: 99px; background: var(--line); font-variant-numeric: tabular-nums; }
 .pad { padding: 8px 12px; }
 
 .detail { display: flex; flex-direction: column; min-height: 0; }
 .detail-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 16px 20px 12px; }
-.detail-head h1 { font-size: 20px; }
+.detail-head h1 { font-size: var(--fs-title); }
 .filters { display: flex; gap: 6px; }
 .table-wrap { flex: 1; overflow: auto; padding: 0 20px 20px; }
 table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: var(--bg); position: sticky; top: 0; }
+th { font-size: var(--fs-label); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: var(--bg); position: sticky; top: 0; }
 tr:last-child td { border-bottom: 0; }
 td.num { font-variant-numeric: tabular-nums; color: var(--muted); }
-.tier { font: 12px ui-monospace, Menlo, Consolas, monospace; padding: 2px 6px; border-radius: 4px; background: var(--bg); border: 1px solid var(--line); }
+.tier { font: var(--fs-secondary) ui-monospace, Menlo, Consolas, monospace; padding: 2px 6px; border-radius: 4px; background: var(--bg); border: 1px solid var(--line); }
 .plink { height: auto; border: 0; background: none; padding: 0; color: var(--text); font-weight: 600; }
 .plink:hover { color: var(--accent); text-decoration: underline; }
 .res { font-weight: 600; }
@@ -122,7 +126,7 @@ td.num { font-variant-numeric: tabular-nums; color: var(--muted); }
 .res.tie { color: var(--muted); }
 .link { color: var(--accent); text-decoration: none; font-weight: 500; }
 .link:hover { text-decoration: underline; }
-.tag { height: auto; font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--line); color: var(--muted); text-decoration: none; border: 0; }
+.tag { height: auto; font-size: var(--fs-label); padding: 2px 8px; border-radius: 99px; background: var(--line); color: var(--muted); text-decoration: none; border: 0; }
 .tag.live { background: var(--live-soft); color: var(--live); }
 .tag.missing { background: var(--loss-soft); color: var(--loss); cursor: pointer; }
 .pager { display: flex; justify-content: center; align-items: center; gap: 6px; padding-top: 16px; }
