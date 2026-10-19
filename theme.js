@@ -3,9 +3,7 @@
 (() => {
   let theme = null;
   try { theme = localStorage.getItem('theme'); } catch {}
-  if (theme !== 'light' && theme !== 'dark') {
-    theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
+  if (theme !== 'light' && theme !== 'dark') theme = 'light';
   document.documentElement.dataset.theme = theme;
 
   window.setTheme = (t) => {
