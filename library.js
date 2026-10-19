@@ -5,6 +5,16 @@ const $ = (id) => document.getElementById(id);
 
 let matches = [];
 let selected = null; // id normalisé du joueur, ou null = tous
+let page = 1;
+const PAGE_SIZE = 50;
+let playersKey = '';
+let tiersKey = '';
+
+function select(id) {
+  selected = id;
+  page = 1;
+  renderAll();
+}
 
 const fmtDate = new Intl.DateTimeFormat('fr-FR', {
   day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit',
@@ -56,18 +66,23 @@ function renderPlayers() {
   $('allCount').textContent = matches.length;
   $('allBtn').classList.toggle('active', selected === null);
 
-  const ul = $('playerList');
-  ul.replaceChildren(...list.map((p) => el('li', {},
-    el('button', {
-      class: 'player' + (p.id === selected ? ' active' : ''),
-      onclick: () => { selected = p.id; renderAll(); },
-    },
-      el('span', { class: 'name' }, p.name),
-      el('span', { class: 'wl' }, `${p.w}-${p.l}`),
-      el('span', { class: 'count' }, String(p.count)),
-    ),
-  )));
-  if (!list.length && players.length) ul.append(el('li', { class: 'hint pad' }, 'Aucun joueur trouvé.'));
+  // On ne redessine la liste que si elle a vraiment changé.
+  const key = [selected, q, sort, ...list.map((p) => `${p.id}:${p.name}:${p.count}:${p.w}:${p.l}`)].join('|');
+  if (key !== playersKey) {
+    playersKey = key;
+    const ul = $('playerList');
+    ul.replaceChildren(...list.map((p) => el('li', {},
+      el('button', {
+        class: 'player' + (p.id === selected ? ' active' : ''),
+        onclick: () => select(p.id),
+      },
+        el('span', { class: 'name' }, p.name),
+        el('span', { class: 'wl' }, `${p.w}-${p.l}`),
+        el('span', { class: 'count' }, String(p.count)),
+      ),
+    )));
+    if (!list.length && players.length) ul.append(el('li', { class: 'hint pad' }, 'Aucun joueur trouvé.'));
+  }
 
   $('totals').textContent = `${matches.length} matchs · ${players.length} joueurs`;
   return players;
@@ -136,7 +151,9 @@ function renderMatches(players) {
     : ['Date', 'Tier', 'Joueur 1', 'Joueur 2', 'Vainqueur', 'Replay'];
   $('thead').replaceChildren(el('tr', {}, ...head.map((h) => el('th', {}, h))));
 
-  const rows = list.map((m) => {
+  const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  page = Math.min(Math.max(page, 1), pages);
+  const rows = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((m) => {
     const date = m.startedAt ? fmtDate.format(new Date(m.startedAt)) : '—';
     if (selected) {
       const opp = oppOf(m);
@@ -145,7 +162,7 @@ function renderMatches(players) {
         el('td', { class: 'num' }, date),
         el('td', {}, el('span', { class: 'tier' }, m.format || '?')),
         el('td', {}, el('button', {
-          class: 'plink', onclick: () => { selected = toID(opp); renderAll(); },
+          class: 'plink', onclick: () => select(toID(opp)),
         }, opp || '?')),
         el('td', {}, el('span', { class: 'res ' + r.cls }, r.text)),
         el('td', {}, statusCell(m)),
@@ -153,7 +170,7 @@ function renderMatches(players) {
     }
     const pbtn = (name) => name ? el('button', {
       class: 'plink' + (m.winner && toID(m.winner) === toID(name) ? ' won' : ''),
-      onclick: () => { selected = toID(name); renderAll(); },
+      onclick: () => select(toID(name)),
     }, name) : '?';
     return el('tr', {},
       el('td', { class: 'num' }, date),
@@ -165,13 +182,40 @@ function renderMatches(players) {
     );
   });
   $('rows').replaceChildren(...rows);
-  $('empty').hidden = rows.length > 0;
+  $('empty').hidden = list.length > 0;
+  renderPager(pages);
+}
+
+// ‹ 1 2 3 … 200 › : masquée s'il n'y a qu'une page.
+function renderPager(pages) {
+  const nav = $('pager');
+  nav.hidden = pages <= 1;
+  if (pages <= 1) return;
+
+  const shown = new Set([1, pages, page - 1, page, page + 1]);
+  if (page <= 2) [1, 2, 3].forEach((n) => shown.add(n));
+  if (page >= pages - 1) [pages - 2, pages - 1, pages].forEach((n) => shown.add(n));
+  const nums = [...shown].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
+
+  const go = (n) => () => { page = n; renderMatches(buildPlayers()); $('tableWrap').scrollTop = 0; };
+  const items = [el('button', { class: 'pg chevron', title: 'Page précédente', disabled: page === 1 ? '' : null, onclick: go(page - 1) }, '‹')];
+  let prev = 0;
+  for (const n of nums) {
+    if (n - prev > 1) items.push(el('span', { class: 'pg-gap' }, '…'));
+    items.push(el('button', { class: 'pg' + (n === page ? ' active' : ''), onclick: go(n) }, String(n)));
+    prev = n;
+  }
+  items.push(el('button', { class: 'pg chevron', title: 'Page suivante', disabled: page === pages ? '' : null, onclick: go(page + 1) }, '›'));
+  nav.replaceChildren(...items);
 }
 
 function renderTierFilter() {
   const sel = $('tierFilter');
   const cur = sel.value;
   const tiers = [...new Set(matches.map((m) => m.format).filter(Boolean))].sort();
+  const key = tiers.join('|');
+  if (key === tiersKey) return;
+  tiersKey = key;
   sel.replaceChildren(el('option', { value: '' }, 'Tous les tiers'),
     ...tiers.map((t) => el('option', { value: t }, t)));
   sel.value = tiers.includes(cur) ? cur : '';
@@ -234,14 +278,18 @@ $('theme').onclick = () => {
 renderThemeButton();
 
 // ---------- événements ----------
-$('allBtn').onclick = () => { selected = null; renderAll(); };
+$('allBtn').onclick = () => select(null);
 $('search').oninput = renderPlayers;
 $('playerSort').onchange = renderPlayers;
-$('tierFilter').onchange = () => renderMatches(buildPlayers());
-$('matchSort').onchange = () => renderMatches(buildPlayers());
+$('tierFilter').onchange = () => { page = 1; renderMatches(buildPlayers()); };
+$('matchSort').onchange = () => { page = 1; renderMatches(buildPlayers()); };
 
+// Plusieurs matchs peuvent changer d'un coup : on regroupe les rechargements.
+let reloadTimer = null;
 chrome.storage.onChanged.addListener((c, area) => {
-  if (area === 'local' && c.dbRev) load();
+  if (area !== 'local' || !c.dbRev) return;
+  clearTimeout(reloadTimer);
+  reloadTimer = setTimeout(load, 300);
 });
 
 load();

@@ -127,6 +127,12 @@ td.num { font-variant-numeric: tabular-nums; color: var(--muted); }
 .tag { height: auto; font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--line); color: var(--muted); text-decoration: none; border: 0; }
 .tag.live { background: var(--live-soft); color: var(--live); }
 .tag.missing { background: var(--loss-soft); color: var(--loss); cursor: pointer; }
+.pager { display: flex; justify-content: center; align-items: center; gap: 6px; padding-top: 16px; }
+.pager[hidden] { display: none; }
+.pg { min-width: 35px; padding: 0 8px; }
+.pg.active { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.pg:disabled { opacity: .4; }
+.pg-gap { color: var(--muted); padding: 0 4px; }
 .empty { color: var(--muted); text-align: center; padding: 40px 0; }
 
 @media (max-width: 720px) {
