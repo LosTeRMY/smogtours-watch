@@ -10,7 +10,6 @@
   --loss: #c4372f;
   --live: #d97706;
   --radius: 8px;
-  font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -29,7 +28,8 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); }
+/* Chrome injecte body { font-size: 75% } dans les pages d'extension sous Windows : on redéfinit police et taille. */
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 h1, h2 { margin: 0; }
 h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 8px; }
 
