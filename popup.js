@@ -4,7 +4,7 @@ const $ = (id) => document.getElementById(id);
 
 async function getSettings() {
   const { settings } = await chrome.storage.local.get('settings');
-  return { tiers: ['gen4ou'], notifications: true, ...settings };
+  return { enabled: true, tiers: ['gen4ou'], notifications: true, ...settings };
 }
 async function saveSettings(patch) {
   await chrome.storage.local.set({ settings: { ...(await getSettings()), ...patch } });
@@ -20,7 +20,9 @@ async function render() {
   const s = await getSettings();
   const { status = {}, log = [] } = await chrome.storage.local.get(['status', 'log']);
 
+  $('enabled').checked = s.enabled;
   $('notif').checked = s.notifications;
+  $('pollNow').disabled = !s.enabled;
 
   $('tiers').replaceChildren(...s.tiers.map((t) => {
     const chip = document.createElement('span');
@@ -36,12 +38,18 @@ async function render() {
   }));
   if (!s.tiers.length) $('tiers').innerHTML = '<span class="hint">No tier: nothing is being watched.</span>';
 
-  $('status').textContent = status.connected ? `connected · ${status.liveCount || 0} live` : 'disconnected';
-  $('status').className = `status ${status.connected ? 'ok' : 'off'}`;
+  if (!s.enabled) {
+    $('status').textContent = 'paused';
+    $('status').className = 'status';
+  } else {
+    $('status').textContent = status.connected ? `connected · ${status.liveCount || 0} live` : 'disconnected';
+    $('status').className = `status ${status.connected ? 'ok' : 'off'}`;
+  }
   $('meta').textContent = `Last poll: ${ago(status.lastPollAt)}`;
   $('log').textContent = log.slice(-60).join('\n');
 }
 
+$('enabled').onchange = (e) => saveSettings({ enabled: e.target.checked });
 $('notif').onchange = (e) => saveSettings({ notifications: e.target.checked });
 
 $('addTier').onsubmit = async (e) => {

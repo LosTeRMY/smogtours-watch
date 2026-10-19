@@ -14,7 +14,7 @@ const TIMEOUT_MS = 8_000;
 const FRESH_MS = 90_000; // au-delà, on a pu rater des choses : pas de notification au réveil
 const RETRY_DELAYS = [5, 15, 30, 60, 120, 300].map((s) => s * 1000);
 const LOG_MAX = 200;
-const DEFAULT_SETTINGS = { tiers: ['gen4ou'], notifications: true };
+const DEFAULT_SETTINGS = { enabled: true, tiers: ['gen4ou'], notifications: true };
 
 // ---------- journal ----------
 let logBuf = null;
@@ -110,6 +110,7 @@ function queryRoomlist(tier) {
 function poll() {
   return exclusive(async () => {
     const settings = await getSettings();
+    if (!settings.enabled) return; // en pause : on ne touche à rien
     const state = await getState();
     const now = Date.now();
 
@@ -154,9 +155,11 @@ function poll() {
     }
 
     if (checked.size) state.lastPollAt = now;
-    if (await fetchPendingReplays(state)) changed = true;
+    // Mise en pause pendant ce sondage : on garde les replays en attente pour la reprise.
+    const stillEnabled = (await getSettings()).enabled;
+    if (stillEnabled && await fetchPendingReplays(state)) changed = true;
     await saveState(state);
-    await setStatus({ connected: ws?.readyState === WebSocket.OPEN, lastPollAt: state.lastPollAt, liveCount: Object.keys(state.live).length });
+    if (stillEnabled) await setStatus({ connected: ws?.readyState === WebSocket.OPEN, lastPollAt: state.lastPollAt, liveCount: Object.keys(state.live).length });
     if (changed) libraryChanged();
   });
 }
@@ -223,9 +226,31 @@ chrome.notifications.onClicked.addListener((id) => {
 
 // ---------- cycle de vie ----------
 async function ensureRunning() {
-  const { tiers } = await getSettings();
+  const { enabled, tiers } = await getSettings();
+  if (!enabled) return pause();
   if (tiers.length) connect();
   else poll(); // rien à surveiller, mais on termine les replays en attente
+}
+
+// Surveillance désactivée : on se déconnecte et on ne fait plus rien.
+// Les matchs live et les replays en attente restent dans state pour la reprise.
+async function pause() {
+  clearInterval(pollTimer);
+  pollTimer = null;
+  if (ws) {
+    const w = ws;
+    ws = null;
+    w.onclose = null; // pas de reconnexion automatique
+    w.close();
+    waiter?.reject(new Error('paused'));
+    waiter = null;
+    log('paused');
+  }
+  const { status = {} } = await chrome.storage.local.get('status');
+  if (!status.paused) {
+    const { lastPollAt } = await getState();
+    await setStatus({ connected: false, paused: true, lastPollAt, liveCount: status.liveCount });
+  }
 }
 
 chrome.alarms.create('keepalive', { periodInMinutes: 0.5 });
@@ -279,6 +304,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         state.pending.push({ roomid: msg.roomid, attempt: 0, next: 0 });
       }
       await saveState(state);
+      // En pause, poll() ne fait rien : le match attend la reprise en "fetching…".
+      await saveMatch(msg.roomid, { status: 'ended' });
+      libraryChanged();
     }).then(poll).then(() => sendResponse(true), () => sendResponse(false));
     return true;
   }
