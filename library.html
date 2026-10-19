@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bibliothèque · Smogtours Watch</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body class="library">
+  <header class="bar lib-bar">
+    <span class="brand"><img src="icons/icon48.png" alt="">Bibliothèque des replays</span>
+    <span id="totals" class="meta"></span>
+    <span class="spacer"></span>
+    <button id="export">Exporter</button>
+    <label class="btn">Importer<input type="file" id="import" accept="application/json" hidden></label>
+  </header>
+
+  <main class="cols">
+    <aside class="players">
+      <div class="players-tools">
+        <input id="search" type="search" placeholder="Joueur…" autocomplete="off">
+        <select id="playerSort" title="Trier les joueurs">
+          <option value="az">A → Z</option>
+          <option value="count">Nb de matchs</option>
+          <option value="recent">Dernier match</option>
+        </select>
+      </div>
+      <button id="allBtn" class="player all">
+        <span class="name">Tous les matchs</span><span class="count" id="allCount"></span>
+      </button>
+      <ul id="playerList" class="player-list"></ul>
+    </aside>
+
+    <section class="detail">
+      <div class="detail-head">
+        <div>
+          <h1 id="title">Tous les matchs</h1>
+          <p id="record" class="meta"></p>
+        </div>
+        <div class="filters">
+          <select id="tierFilter" title="Filtrer par tier"></select>
+          <select id="matchSort" title="Trier les matchs">
+            <option value="date">Date (récent)</option>
+            <option value="opp">Adversaire</option>
+            <option value="tier">Tier</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead id="thead"></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <p id="empty" class="empty" hidden>Aucun match pour l'instant. Ils apparaîtront ici dès qu'un match d'un de tes tiers se termine.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="library.js" type="module"></script>
+</body>
+</html>

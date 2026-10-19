@@ -1,0 +1,230 @@
+import { allMatches, importMatches } from './lib/db.js';
+import { toID, CLIENT_URL } from './lib/protocol.js';
+
+const $ = (id) => document.getElementById(id);
+
+let matches = [];
+let selected = null; // id normalisé du joueur, ou null = tous
+
+const fmtDate = new Intl.DateTimeFormat('fr-FR', {
+  day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit',
+});
+
+function el(tag, attrs = {}, ...children) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') n.className = v;
+    else if (k.startsWith('on')) n[k] = v;
+    else if (v != null) n.setAttribute(k, v);
+  }
+  for (const c of children) if (c != null) n.append(c);
+  return n;
+}
+
+// ---------- agrégation par joueur ----------
+function buildPlayers() {
+  const map = new Map();
+  const sorted = [...matches].sort((a, b) => (a.startedAt || 0) - (b.startedAt || 0));
+  for (const m of sorted) {
+    for (const name of [m.p1, m.p2]) {
+      if (!name) continue;
+      const id = toID(name);
+      const p = map.get(id) || { id, name, count: 0, w: 0, l: 0, last: 0 };
+      p.name = name; // dernier pseudo vu
+      p.count++;
+      p.last = Math.max(p.last, m.startedAt || 0);
+      if (m.status === 'saved' && m.winner) {
+        if (toID(m.winner) === id) p.w++; else p.l++;
+      }
+      map.set(id, p);
+    }
+  }
+  return [...map.values()];
+}
+
+function renderPlayers() {
+  const players = buildPlayers();
+  const q = toID($('search').value);
+  const sort = $('playerSort').value;
+  const list = players.filter((p) => !q || p.id.includes(q));
+  list.sort((a, b) => {
+    if (sort === 'count') return b.count - a.count || a.id.localeCompare(b.id);
+    if (sort === 'recent') return b.last - a.last;
+    return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' });
+  });
+
+  $('allCount').textContent = matches.length;
+  $('allBtn').classList.toggle('active', selected === null);
+
+  const ul = $('playerList');
+  ul.replaceChildren(...list.map((p) => el('li', {},
+    el('button', {
+      class: 'player' + (p.id === selected ? ' active' : ''),
+      onclick: () => { selected = p.id; renderAll(); },
+    },
+      el('span', { class: 'name' }, p.name),
+      el('span', { class: 'wl' }, `${p.w}-${p.l}`),
+      el('span', { class: 'count' }, String(p.count)),
+    ),
+  )));
+  if (!list.length && players.length) ul.append(el('li', { class: 'hint pad' }, 'Aucun joueur trouvé.'));
+
+  $('totals').textContent = `${matches.length} matchs · ${players.length} joueurs`;
+  return players;
+}
+
+// ---------- liste des matchs ----------
+function statusCell(m) {
+  if (m.status === 'saved' && m.replayUrl) {
+    return el('a', { href: m.replayUrl, target: '_blank', rel: 'noopener', class: 'link' }, 'Replay ↗');
+  }
+  if (m.status === 'live') {
+    return el('a', { href: `${CLIENT_URL}/${m.roomid}`, target: '_blank', rel: 'noopener', class: 'tag live' }, 'en cours ↗');
+  }
+  if (m.status === 'ended') return el('span', { class: 'tag' }, 'récupération…');
+  if (m.status === 'missing') {
+    return el('button', {
+      class: 'tag missing', title: 'Réessayer la récupération',
+      onclick: async (e) => {
+        e.target.textContent = '…';
+        await chrome.runtime.sendMessage({ type: 'retryReplay', roomid: m.roomid });
+      },
+    }, 'non récupéré ↻');
+  }
+  return el('span', { class: 'tag' }, m.status || '?');
+}
+
+function resultFor(m, pid) {
+  if (m.status !== 'saved') return { text: '—', cls: '' };
+  if (m.tie) return { text: 'Nul', cls: 'tie' };
+  if (!m.winner) return { text: '?', cls: '' };
+  const won = toID(m.winner) === pid;
+  return { text: (won ? 'V' : 'D') + (m.forfeit ? ' (ff)' : ''), cls: won ? 'win' : 'loss' };
+}
+
+function renderMatches(players) {
+  const tier = $('tierFilter').value;
+  const sort = $('matchSort').value;
+  const player = players.find((p) => p.id === selected);
+
+  if (selected && !player) selected = null;
+
+  const list = matches.filter((m) => (!selected || m.ids?.includes(selected)) && (!tier || m.format === tier));
+
+  const oppOf = (m) => {
+    if (!selected) return '';
+    return toID(m.p1) === selected ? (m.p2 || '') : (m.p1 || '');
+  };
+  list.sort((a, b) => {
+    if (sort === 'opp' && selected) return oppOf(a).localeCompare(oppOf(b), 'fr', { sensitivity: 'base' });
+    if (sort === 'tier') return (a.format || '').localeCompare(b.format || '') || (b.startedAt || 0) - (a.startedAt || 0);
+    return (b.startedAt || 0) - (a.startedAt || 0);
+  });
+
+  if (player) {
+    $('title').textContent = player.name;
+    const total = player.w + player.l;
+    const pct = total ? Math.round((player.w / total) * 100) : 0;
+    $('record').textContent = `${player.count} matchs · ${player.w} V – ${player.l} D${total ? ` (${pct} %)` : ''}`;
+  } else {
+    $('title').textContent = 'Tous les matchs';
+    $('record').textContent = `${list.length} matchs`;
+  }
+
+  const head = selected
+    ? ['Date', 'Tier', 'Adversaire', 'Résultat', 'Replay']
+    : ['Date', 'Tier', 'Joueur 1', 'Joueur 2', 'Vainqueur', 'Replay'];
+  $('thead').replaceChildren(el('tr', {}, ...head.map((h) => el('th', {}, h))));
+
+  const rows = list.map((m) => {
+    const date = m.startedAt ? fmtDate.format(new Date(m.startedAt)) : '—';
+    if (selected) {
+      const opp = oppOf(m);
+      const r = resultFor(m, selected);
+      return el('tr', {},
+        el('td', { class: 'num' }, date),
+        el('td', {}, el('span', { class: 'tier' }, m.format || '?')),
+        el('td', {}, el('button', {
+          class: 'plink', onclick: () => { selected = toID(opp); renderAll(); },
+        }, opp || '?')),
+        el('td', {}, el('span', { class: 'res ' + r.cls }, r.text)),
+        el('td', {}, statusCell(m)),
+      );
+    }
+    const pbtn = (name) => name ? el('button', {
+      class: 'plink' + (m.winner && toID(m.winner) === toID(name) ? ' won' : ''),
+      onclick: () => { selected = toID(name); renderAll(); },
+    }, name) : '?';
+    return el('tr', {},
+      el('td', { class: 'num' }, date),
+      el('td', {}, el('span', { class: 'tier' }, m.format || '?')),
+      el('td', {}, pbtn(m.p1)),
+      el('td', {}, pbtn(m.p2)),
+      el('td', {}, m.status === 'saved' ? (m.tie ? 'Nul' : (m.winner || '?')) : '—'),
+      el('td', {}, statusCell(m)),
+    );
+  });
+  $('rows').replaceChildren(...rows);
+  $('empty').hidden = rows.length > 0;
+}
+
+function renderTierFilter() {
+  const sel = $('tierFilter');
+  const cur = sel.value;
+  const tiers = [...new Set(matches.map((m) => m.format).filter(Boolean))].sort();
+  sel.replaceChildren(el('option', { value: '' }, 'Tous les tiers'),
+    ...tiers.map((t) => el('option', { value: t }, t)));
+  sel.value = tiers.includes(cur) ? cur : '';
+}
+
+function renderAll() {
+  renderTierFilter();
+  const players = renderPlayers();
+  renderMatches(players);
+}
+
+async function load() {
+  matches = await allMatches();
+  renderAll();
+}
+
+// ---------- export / import ----------
+$('export').onclick = async () => {
+  const data = { app: 'smogtours-watch', version: 1, exportedAt: new Date().toISOString(), matches: await allMatches() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = el('a', { href: URL.createObjectURL(blob), download: `smogtours-replays-${new Date().toISOString().slice(0, 10)}.json` });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+$('import').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const list = Array.isArray(data) ? data : data.matches;
+    if (!Array.isArray(list)) throw new Error('format inconnu');
+    // On garde les replays déjà enregistrés plutôt qu'une version moins complète.
+    const saved = new Set(matches.filter((m) => m.status === 'saved').map((m) => m.roomid));
+    const toPut = list.filter((m) => m?.roomid && !(saved.has(m.roomid) && m.status !== 'saved'));
+    await importMatches(toPut);
+    alert(`${toPut.length} matchs importés.`);
+    load();
+  } catch (err) {
+    alert(`Import impossible : ${err.message}`);
+  }
+  e.target.value = '';
+};
+
+// ---------- événements ----------
+$('allBtn').onclick = () => { selected = null; renderAll(); };
+$('search').oninput = renderPlayers;
+$('playerSort').onchange = renderPlayers;
+$('tierFilter').onchange = () => renderMatches(buildPlayers());
+$('matchSort').onchange = () => renderMatches(buildPlayers());
+
+chrome.storage.onChanged.addListener((c, area) => {
+  if (area === 'local' && c.dbRev) load();
+});
+
+load();

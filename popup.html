@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Smogtours Watch</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body class="popup">
+  <header class="bar">
+    <span class="brand"><img src="icons/icon48.png" alt="">Smogtours Watch</span>
+    <span id="status" class="status">…</span>
+  </header>
+
+  <section class="block">
+    <label class="switch-row">
+      <span>Notifications de début de match</span>
+      <input type="checkbox" id="notif" class="switch">
+    </label>
+  </section>
+
+  <section class="block">
+    <h2>Tiers surveillés</h2>
+    <div id="tiers" class="chips"></div>
+    <form id="addTier" class="add">
+      <input id="tierInput" placeholder="ex. gen4ou, gen7ou, gen4ubers" autocomplete="off">
+      <button type="submit">Ajouter</button>
+    </form>
+    <p class="hint">L'ID du tier est celui de l'URL d'un match : battle-<b>gen4ou</b>-123456</p>
+  </section>
+
+  <section class="block row">
+    <button id="openLib" class="primary">Ouvrir la bibliothèque</button>
+    <button id="pollNow" title="Interroger le serveur maintenant">Actualiser</button>
+  </section>
+
+  <details class="block">
+    <summary>Debug</summary>
+    <p class="meta" id="meta"></p>
+    <div class="row">
+      <button id="copyLog">Copier le journal</button>
+      <button id="clearLog">Vider</button>
+    </div>
+    <pre id="log" class="log"></pre>
+  </details>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
