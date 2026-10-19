@@ -11,9 +11,9 @@ async function saveSettings(patch) {
 }
 
 function ago(ts) {
-  if (!ts) return 'jamais';
+  if (!ts) return 'never';
   const s = Math.round((Date.now() - ts) / 1000);
-  return s < 60 ? `il y a ${s} s` : `il y a ${Math.round(s / 60)} min`;
+  return s < 60 ? `${s} s ago` : `${Math.round(s / 60)} min ago`;
 }
 
 async function render() {
@@ -29,16 +29,16 @@ async function render() {
     const x = document.createElement('button');
     x.type = 'button';
     x.textContent = '×';
-    x.title = `Retirer ${t}`;
+    x.title = `Remove ${t}`;
     x.onclick = () => saveSettings({ tiers: s.tiers.filter((v) => v !== t) });
     chip.append(x);
     return chip;
   }));
-  if (!s.tiers.length) $('tiers').innerHTML = '<span class="hint">Aucun tier : rien n\'est surveillé.</span>';
+  if (!s.tiers.length) $('tiers').innerHTML = '<span class="hint">No tier: nothing is being watched.</span>';
 
-  $('status').textContent = status.connected ? `connecté · ${status.liveCount || 0} en cours` : 'déconnecté';
+  $('status').textContent = status.connected ? `connected · ${status.liveCount || 0} live` : 'disconnected';
   $('status').className = `status ${status.connected ? 'ok' : 'off'}`;
-  $('meta').textContent = `Dernier sondage : ${ago(status.lastPollAt)}`;
+  $('meta').textContent = `Last poll: ${ago(status.lastPollAt)}`;
   $('log').textContent = log.slice(-60).join('\n');
 }
 
@@ -67,8 +67,8 @@ $('pollNow').onclick = async () => {
 $('copyLog').onclick = async () => {
   const { log = [], status = {}, settings = {} } = await chrome.storage.local.get(['log', 'status', 'settings']);
   await navigator.clipboard.writeText([`settings: ${JSON.stringify(settings)}`, `status: ${JSON.stringify(status)}`, ...log].join('\n'));
-  $('copyLog').textContent = 'Copié';
-  setTimeout(() => { $('copyLog').textContent = 'Copier le journal'; }, 1200);
+  $('copyLog').textContent = 'Copied';
+  setTimeout(() => { $('copyLog').textContent = 'Copy log'; }, 1200);
 };
 
 $('clearLog').onclick = () => chrome.storage.local.set({ log: [] });

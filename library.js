@@ -16,7 +16,7 @@ function select(id) {
   renderAll();
 }
 
-const fmtDate = new Intl.DateTimeFormat('fr-FR', {
+const fmtDate = new Intl.DateTimeFormat('en-GB', {
   day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit',
 });
 
@@ -60,7 +60,7 @@ function renderPlayers() {
   list.sort((a, b) => {
     if (sort === 'count') return b.count - a.count || a.id.localeCompare(b.id);
     if (sort === 'recent') return b.last - a.last;
-    return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' });
+    return a.name.localeCompare(b.name, 'en', { sensitivity: 'base' });
   });
 
   $('allCount').textContent = matches.length;
@@ -81,10 +81,10 @@ function renderPlayers() {
         el('span', { class: 'count' }, String(p.count)),
       ),
     )));
-    if (!list.length && players.length) ul.append(el('li', { class: 'hint pad' }, 'Aucun joueur trouvé.'));
+    if (!list.length && players.length) ul.append(el('li', { class: 'hint pad' }, 'No players found.'));
   }
 
-  $('totals').textContent = `${matches.length} matchs · ${players.length} joueurs`;
+  $('totals').textContent = `${matches.length} matches · ${players.length} players`;
   return players;
 }
 
@@ -94,27 +94,27 @@ function statusCell(m) {
     return el('a', { href: m.replayUrl, target: '_blank', rel: 'noopener', class: 'link' }, 'Replay ↗');
   }
   if (m.status === 'live') {
-    return el('a', { href: `${CLIENT_URL}/${m.roomid}`, target: '_blank', rel: 'noopener', class: 'tag live' }, 'en cours ↗');
+    return el('a', { href: `${CLIENT_URL}/${m.roomid}`, target: '_blank', rel: 'noopener', class: 'tag live' }, 'live ↗');
   }
-  if (m.status === 'ended') return el('span', { class: 'tag' }, 'récupération…');
+  if (m.status === 'ended') return el('span', { class: 'tag' }, 'fetching…');
   if (m.status === 'missing') {
     return el('button', {
-      class: 'tag missing', title: 'Réessayer la récupération',
+      class: 'tag missing', title: 'Retry fetching',
       onclick: async (e) => {
         e.target.textContent = '…';
         await chrome.runtime.sendMessage({ type: 'retryReplay', roomid: m.roomid });
       },
-    }, 'non récupéré ↻');
+    }, 'not fetched ↻');
   }
   return el('span', { class: 'tag' }, m.status || '?');
 }
 
 function resultFor(m, pid) {
   if (m.status !== 'saved') return { text: '—', cls: '' };
-  if (m.tie) return { text: 'Nul', cls: 'tie' };
+  if (m.tie) return { text: 'Draw', cls: 'tie' };
   if (!m.winner) return { text: '?', cls: '' };
   const won = toID(m.winner) === pid;
-  return { text: (won ? 'V' : 'D') + (m.forfeit ? ' (ff)' : ''), cls: won ? 'win' : 'loss' };
+  return { text: (won ? 'W' : 'L') + (m.forfeit ? ' (ff)' : ''), cls: won ? 'win' : 'loss' };
 }
 
 function renderMatches(players) {
@@ -131,7 +131,7 @@ function renderMatches(players) {
     return toID(m.p1) === selected ? (m.p2 || '') : (m.p1 || '');
   };
   list.sort((a, b) => {
-    if (sort === 'opp' && selected) return oppOf(a).localeCompare(oppOf(b), 'fr', { sensitivity: 'base' });
+    if (sort === 'opp' && selected) return oppOf(a).localeCompare(oppOf(b), 'en', { sensitivity: 'base' });
     if (sort === 'tier') return (a.format || '').localeCompare(b.format || '') || (b.startedAt || 0) - (a.startedAt || 0);
     return (b.startedAt || 0) - (a.startedAt || 0);
   });
@@ -140,15 +140,15 @@ function renderMatches(players) {
     $('title').textContent = player.name;
     const total = player.w + player.l;
     const pct = total ? Math.round((player.w / total) * 100) : 0;
-    $('record').textContent = `${player.count} matchs · ${player.w} V – ${player.l} D${total ? ` (${pct} %)` : ''}`;
+    $('record').textContent = `${player.count} matches · ${player.w} W – ${player.l} L${total ? ` (${pct}%)` : ''}`;
   } else {
-    $('title').textContent = 'Tous les matchs';
-    $('record').textContent = `${list.length} matchs`;
+    $('title').textContent = 'All matches';
+    $('record').textContent = `${list.length} matches`;
   }
 
   const head = selected
-    ? ['Date', 'Tier', 'Adversaire', 'Résultat', 'Replay']
-    : ['Date', 'Tier', 'Joueur 1', 'Joueur 2', 'Vainqueur', 'Replay'];
+    ? ['Date', 'Tier', 'Opponent', 'Result', 'Replay']
+    : ['Date', 'Tier', 'Player 1', 'Player 2', 'Winner', 'Replay'];
   $('thead').replaceChildren(el('tr', {}, ...head.map((h) => el('th', {}, h))));
 
   const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
@@ -177,7 +177,7 @@ function renderMatches(players) {
       el('td', {}, el('span', { class: 'tier' }, m.format || '?')),
       el('td', {}, pbtn(m.p1)),
       el('td', {}, pbtn(m.p2)),
-      el('td', {}, m.status === 'saved' ? (m.tie ? 'Nul' : (m.winner || '?')) : '—'),
+      el('td', {}, m.status === 'saved' ? (m.tie ? 'Draw' : (m.winner || '?')) : '—'),
       el('td', {}, statusCell(m)),
     );
   });
@@ -198,14 +198,14 @@ function renderPager(pages) {
   const nums = [...shown].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
 
   const go = (n) => () => { page = n; renderMatches(buildPlayers()); $('tableWrap').scrollTop = 0; };
-  const items = [el('button', { class: 'pg chevron', title: 'Page précédente', disabled: page === 1 ? '' : null, onclick: go(page - 1) }, '‹')];
+  const items = [el('button', { class: 'pg chevron', title: 'Previous page', disabled: page === 1 ? '' : null, onclick: go(page - 1) }, '‹')];
   let prev = 0;
   for (const n of nums) {
     if (n - prev > 1) items.push(el('span', { class: 'pg-gap' }, '…'));
     items.push(el('button', { class: 'pg' + (n === page ? ' active' : ''), onclick: go(n) }, String(n)));
     prev = n;
   }
-  items.push(el('button', { class: 'pg chevron', title: 'Page suivante', disabled: page === pages ? '' : null, onclick: go(page + 1) }, '›'));
+  items.push(el('button', { class: 'pg chevron', title: 'Next page', disabled: page === pages ? '' : null, onclick: go(page + 1) }, '›'));
   nav.replaceChildren(...items);
 }
 
@@ -216,7 +216,7 @@ function renderTierFilter() {
   const key = tiers.join('|');
   if (key === tiersKey) return;
   tiersKey = key;
-  sel.replaceChildren(el('option', { value: '' }, 'Tous les tiers'),
+  sel.replaceChildren(el('option', { value: '' }, 'All tiers'),
     ...tiers.map((t) => el('option', { value: t }, t)));
   sel.value = tiers.includes(cur) ? cur : '';
 }
@@ -247,15 +247,15 @@ $('import').onchange = async (e) => {
   try {
     const data = JSON.parse(await file.text());
     const list = Array.isArray(data) ? data : data.matches;
-    if (!Array.isArray(list)) throw new Error('format inconnu');
+    if (!Array.isArray(list)) throw new Error('unknown format');
     // On garde les replays déjà enregistrés plutôt qu'une version moins complète.
     const saved = new Set(matches.filter((m) => m.status === 'saved').map((m) => m.roomid));
     const toPut = list.filter((m) => m?.roomid && !(saved.has(m.roomid) && m.status !== 'saved'));
     await importMatches(toPut);
-    alert(`${toPut.length} matchs importés.`);
+    alert(`${toPut.length} matches imported.`);
     load();
   } catch (err) {
-    alert(`Import impossible : ${err.message}`);
+    alert(`Import failed: ${err.message}`);
   }
   e.target.value = '';
 };
@@ -269,7 +269,7 @@ const ICONS = {
 function renderThemeButton() {
   const dark = document.documentElement.dataset.theme === 'dark';
   $('theme').innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${dark ? ICONS.sun : ICONS.moon}</svg>`;
-  $('theme').title = dark ? 'Passer en mode clair' : 'Passer en mode sombre';
+  $('theme').title = dark ? 'Switch to light mode' : 'Switch to dark mode';
 }
 $('theme').onclick = () => {
   setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');

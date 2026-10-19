@@ -1,34 +1,34 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bibliothèque · Smogtours Watch</title>
+  <title>Library · Smogtours Watch</title>
   <script src="theme.js"></script>
   <link rel="stylesheet" href="ui.css">
 </head>
 <body class="library">
   <header class="bar lib-bar">
-    <span class="brand"><img src="icons/icon48.png" alt="">Bibliothèque des replays</span>
+    <span class="brand"><img src="icons/icon48.png" alt="">Replay library</span>
     <span id="totals" class="meta"></span>
     <span class="spacer"></span>
-    <button id="export">Exporter</button>
-    <label class="btn">Importer<input type="file" id="import" accept="application/json" hidden></label>
+    <button id="export">Export</button>
+    <label class="btn">Import<input type="file" id="import" accept="application/json" hidden></label>
     <button id="theme" class="icon-btn" type="button"></button>
   </header>
 
   <main class="cols">
     <aside class="players">
       <div class="players-tools">
-        <input id="search" type="search" placeholder="Joueur…" autocomplete="off">
-        <select id="playerSort" title="Trier les joueurs">
+        <input id="search" type="search" placeholder="Player…" autocomplete="off">
+        <select id="playerSort" title="Sort players">
           <option value="az">A → Z</option>
-          <option value="count">Nb de matchs</option>
-          <option value="recent">Dernier match</option>
+          <option value="count">Match count</option>
+          <option value="recent">Latest match</option>
         </select>
       </div>
       <button id="allBtn" class="player all">
-        <span class="name">Tous les matchs</span><span class="count" id="allCount"></span>
+        <span class="name">All matches</span><span class="count" id="allCount"></span>
       </button>
       <ul id="playerList" class="player-list"></ul>
     </aside>
@@ -36,14 +36,14 @@
     <section class="detail">
       <div class="detail-head">
         <div>
-          <h1 id="title">Tous les matchs</h1>
+          <h1 id="title">All matches</h1>
           <p id="record" class="meta"></p>
         </div>
         <div class="filters">
-          <select id="tierFilter" title="Filtrer par tier"></select>
-          <select id="matchSort" title="Trier les matchs">
-            <option value="date">Date (récent)</option>
-            <option value="opp">Adversaire</option>
+          <select id="tierFilter" title="Filter by tier"></select>
+          <select id="matchSort" title="Sort matches">
+            <option value="date">Date (newest)</option>
+            <option value="opp">Opponent</option>
             <option value="tier">Tier</option>
           </select>
         </div>
@@ -54,7 +54,7 @@
           <tbody id="rows"></tbody>
         </table>
         <nav id="pager" class="pager" hidden></nav>
-        <p id="empty" class="empty" hidden>Aucun match pour l'instant. Ils apparaîtront ici dès qu'un match d'un de tes tiers se termine.</p>
+        <p id="empty" class="empty" hidden>No matches yet. They will appear here as soon as a match in one of your tiers ends.</p>
       </div>
     </section>
   </main>

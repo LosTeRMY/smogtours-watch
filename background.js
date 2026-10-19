@@ -50,7 +50,7 @@ const libraryChanged = () => chrome.storage.local.set({ dbRev: Date.now() });
 let chain = Promise.resolve();
 function exclusive(fn) {
   const run = chain.then(fn);
-  chain = run.catch((e) => log('erreur', e?.message || e));
+  chain = run.catch((e) => log('error', e?.message || e));
   return run;
 }
 
@@ -61,10 +61,10 @@ let pollTimer = null;
 
 function connect() {
   if (ws) return;
-  log('connexion à', SERVER_URL);
+  log('connecting to', SERVER_URL);
   ws = new WebSocket(SERVER_URL);
   ws.onopen = () => {
-    log('connecté');
+    log('connected');
     setStatus({ connected: true });
     clearInterval(pollTimer);
     pollTimer = setInterval(poll, POLL_MS);
@@ -72,11 +72,11 @@ function connect() {
   };
   ws.onmessage = (ev) => onMessage(String(ev.data));
   ws.onclose = () => {
-    log('déconnecté');
+    log('disconnected');
     ws = null;
     clearInterval(pollTimer);
     pollTimer = null;
-    waiter?.reject(new Error('déconnecté'));
+    waiter?.reject(new Error('disconnected'));
     waiter = null;
     setStatus({ connected: false });
     setTimeout(ensureRunning, 5000);
@@ -92,7 +92,7 @@ function onMessage(data) {
       clearTimeout(w.timer);
       try { w.resolve(JSON.parse(line.slice(prefix.length))?.rooms || {}); } catch (e) { w.reject(e); }
     } else if (line.startsWith('|popup|') || line.startsWith('|error|')) {
-      log('serveur :', line.slice(0, 200));
+      log('server:', line.slice(0, 200));
     }
   }
 }
@@ -100,7 +100,7 @@ function onMessage(data) {
 // Une requête à la fois : les réponses du serveur ne disent pas à quel tier elles correspondent.
 function queryRoomlist(tier) {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { waiter = null; reject(new Error('pas de réponse')); }, TIMEOUT_MS);
+    const timer = setTimeout(() => { waiter = null; reject(new Error('no response')); }, TIMEOUT_MS);
     waiter = { resolve, reject, timer };
     ws.send(`|/cmd roomlist ${tier}`);
   });
@@ -149,7 +149,7 @@ function poll() {
       delete state.live[roomid];
       state.pending.push({ roomid, attempt: 0, next: now + RETRY_DELAYS[0] });
       await saveMatch(roomid, { status: 'ended' });
-      log('fin', roomid);
+      log('ended', roomid);
       changed = true;
     }
 
@@ -176,7 +176,7 @@ async function fetchPendingReplays(state) {
       remaining.push(job);
     } else {
       await saveMatch(job.roomid, { status: 'missing' });
-      log('replay introuvable', job.roomid);
+      log('replay not found', job.roomid);
       changed = true;
     }
   }
@@ -210,7 +210,7 @@ function notifyStart(roomid, format, p1, p2) {
   chrome.notifications.create(roomid, {
     type: 'basic',
     iconUrl: 'icons/icon128.png',
-    title: `${format} — match lancé`,
+    title: `${format} — match started`,
     message: `${p1 || '?'} vs ${p2 || '?'}`,
     contextMessage: 'smogtours · clic pour regarder',
   });
@@ -238,7 +238,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason, previousVersion }) => {
     await clearMatches();
     await chrome.storage.local.remove(['state', 'lastGoodUrl']);
     libraryChanged();
-    log(`mise à jour depuis ${previousVersion} : bibliothèque vidée`);
+    log(`updated from ${previousVersion}: library cleared`);
   }
   const { settings } = await chrome.storage.local.get('settings');
   await chrome.storage.local.set({ settings: { ...DEFAULT_SETTINGS, ...settings } });

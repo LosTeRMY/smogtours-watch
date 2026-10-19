@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>Smogtours Watch</title>
@@ -14,32 +14,32 @@
 
   <section class="block">
     <label class="switch-row">
-      <span>Notifications de début de match</span>
+      <span>Match start notifications</span>
       <input type="checkbox" id="notif" class="switch">
     </label>
   </section>
 
   <section class="block">
-    <h2>Tiers surveillés</h2>
+    <h2>Watched tiers</h2>
     <div id="tiers" class="chips"></div>
     <form id="addTier" class="add">
-      <input id="tierInput" placeholder="ex. gen4ou, gen7ou, gen4ubers" autocomplete="off">
-      <button type="submit">Ajouter</button>
+      <input id="tierInput" placeholder="e.g. gen4ou, gen7ou, gen4ubers" autocomplete="off">
+      <button type="submit">Add</button>
     </form>
-    <p class="hint">L'ID du tier est celui de l'URL d'un match : battle-<b>gen4ou</b>-123456</p>
+    <p class="hint">The tier ID is the one in a match URL: battle-<b>gen4ou</b>-123456</p>
   </section>
 
   <section class="block row">
-    <button id="openLib" class="primary">Ouvrir la bibliothèque</button>
-    <button id="pollNow" title="Interroger le serveur maintenant">Actualiser</button>
+    <button id="openLib" class="primary">Open library</button>
+    <button id="pollNow" title="Query the server now">Refresh</button>
   </section>
 
   <details class="block">
     <summary>Debug</summary>
     <p class="meta" id="meta"></p>
     <div class="row">
-      <button id="copyLog">Copier le journal</button>
-      <button id="clearLog">Vider</button>
+      <button id="copyLog">Copy log</button>
+      <button id="clearLog">Clear</button>
     </div>
     <pre id="log" class="log"></pre>
   </details>

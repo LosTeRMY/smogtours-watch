@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Smogtours Watch",
   "version": "1.1.0",
-  "description": "Notifie quand un match smogtours démarre dans tes tiers et archive les replays par joueur.",
+  "description": "Notifies you when a smogtours match starts in your tiers and archives replays by player.",
   "minimum_chrome_version": "116",
   "permissions": ["notifications", "storage", "alarms", "unlimitedStorage"],
   "host_permissions": ["https://replay.pokemonshowdown.com/*"],
