@@ -67,7 +67,7 @@ function renderPlayers() {
   $('allBtn').classList.toggle('active', selected === null);
 
   // On ne redessine la liste que si elle a vraiment changé.
-  const key = [selected, q, sort, ...list.map((p) => `${p.id}:${p.name}:${p.count}:${p.w}:${p.l}`)].join('|');
+  const key = [selected, q, sort, ...list.map((p) => `${p.id}:${p.name}:${p.count}`)].join('|');
   if (key !== playersKey) {
     playersKey = key;
     const ul = $('playerList');
@@ -77,7 +77,6 @@ function renderPlayers() {
         onclick: () => select(p.id),
       },
         el('span', { class: 'name' }, p.name),
-        el('span', { class: 'wl' }, `${p.w}-${p.l}`),
         el('span', { class: 'count' }, String(p.count)),
       ),
     )));

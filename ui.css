@@ -100,7 +100,6 @@ body.library { height: 100vh; min-width: 1100px; min-height: 620px; display: fle
 .player.active { background: var(--accent-soft); }
 .player.all { border-bottom: 1px solid var(--line); font-weight: 600; padding: 10px 12px; }
 .player .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.player .wl { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .player .count { min-width: 26px; text-align: center; font-size: 11px; padding: 1px 6px; border-radius: 99px; background: var(--line); font-variant-numeric: tabular-nums; }
 .pad { padding: 8px 12px; }
 
