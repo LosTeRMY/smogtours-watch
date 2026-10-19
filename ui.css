@@ -139,3 +139,4 @@ td.num { font-variant-numeric: tabular-nums; color: var(--muted); }
   .cols { grid-template-columns: 1fr; }
   .players { max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--line); }
 }
+.winner { background: var(--win-soft); }

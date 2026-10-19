@@ -168,15 +168,16 @@ function renderMatches(players) {
         el('td', {}, statusCell(m)),
       );
     }
+    const isWinner = (name) => !!name && !!m.winner && toID(m.winner) === toID(name);
     const pbtn = (name) => name ? el('button', {
-      class: 'plink' + (m.winner && toID(m.winner) === toID(name) ? ' won' : ''),
+      class: 'plink' + (isWinner(name) ? ' won' : ''),
       onclick: () => select(toID(name)),
     }, name) : '?';
     return el('tr', {},
       el('td', { class: 'num' }, date),
       el('td', {}, el('span', { class: 'tier' }, m.format || '?')),
-      el('td', {}, pbtn(m.p1)),
-      el('td', {}, pbtn(m.p2)),
+      el('td', { class: isWinner(m.p1) ? 'winner' : null }, pbtn(m.p1)),
+      el('td', { class: isWinner(m.p2) ? 'winner' : null }, pbtn(m.p2)),
       el('td', {}, statusCell(m)),
     );
   });
