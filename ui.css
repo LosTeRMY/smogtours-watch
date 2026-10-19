@@ -69,14 +69,14 @@ body.popup { width: 340px; }
 .block { padding: 12px; border-bottom: 1px solid var(--line); }
 .block.row, .row { display: flex; gap: 8px; }
 .block.row .primary { flex: 1; }
-/* Pastille de statut = interrupteur : le rond coulisse à droite (actif) ou à gauche (pause). */
-.status { position: relative; height: auto; border: 0; color: inherit; width: 82px; text-align: center; white-space: nowrap; font-size: var(--fs-label); padding: 2px 20px 2px 8px; border-radius: 99px; background: var(--line); transition: padding .15s, background .15s; }
+/* Pastille de statut = interrupteur, dimensions de la maquette Figma (hug, padding 8/2, hauteur 17).
+   Rond à droite = surveillance active, à gauche = pause. */
+.status { display: inline-flex; align-items: center; gap: 4px; height: 17px; padding: 2px 8px; border: 0; border-radius: 99px; font-size: var(--fs-label); line-height: 13px; white-space: nowrap; color: inherit; background: var(--line); }
 .status.ok { background: var(--win-soft); color: var(--win); }
 .status.off { background: var(--loss-soft); color: var(--loss); }
-.status.paused { padding: 2px 8px 2px 20px; }
+.status.paused { flex-direction: row-reverse; }
 .status:hover { filter: brightness(1.08); }
-.status .knob { position: absolute; top: 50%; left: calc(100% - 15px); width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #0003; transition: left .15s; }
-.status.paused .knob { left: 3px; }
+.status .knob { width: 9px; height: 9px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #0003; }
 
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; }
 .switch { appearance: none; width: 34px; height: 20px; padding: 0; border-radius: 99px; background: var(--line); position: relative; cursor: pointer; border: 0; transition: background .15s; }
