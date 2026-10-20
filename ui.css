@@ -152,5 +152,5 @@ td.num { font-variant-numeric: tabular-nums; color: var(--muted); }
   .cols { grid-template-columns: 1fr; }
   .players { max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--line); }
 }
-.winner { background: linear-gradient(to right, var(--win-soft), transparent); }
-.loser { background: linear-gradient(to right, var(--loss-soft), transparent); }
+.winner { background: var(--win-soft); }
+.loser { background: var(--loss-soft); }
