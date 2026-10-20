@@ -7,13 +7,14 @@
 //   replay trouvé              -> "saved"  /  pas trouvé après les relances -> "missing"
 
 import { SERVER_URL, CLIENT_URL, REPLAY_BASE, toID, formatOf, replayIdOf, parseReplay } from './lib/protocol.js';
-import { getMatch, saveMatch, clearMatches } from './lib/db.js';
+import { getMatch, saveMatch, clearMatches, allMatches, deleteMatch } from './lib/db.js';
 
 const POLL_MS = 10_000;
 const TIMEOUT_MS = 8_000;
 const FRESH_MS = 90_000; // au-delà, on a pu rater des choses : pas de notification au réveil
 const RETRY_DELAYS = [5, 15, 30, 60, 120, 300].map((s) => s * 1000);
 const LOG_MAX = 200;
+const TRASH_MS = 24 * 3600 * 1000; // durée en corbeille avant suppression définitive
 const DEFAULT_SETTINGS = { enabled: true, tiers: ['gen4ou'], notifications: true };
 
 // ---------- journal ----------
@@ -225,6 +226,25 @@ chrome.notifications.onClicked.addListener((id) => {
   chrome.notifications.clear(id);
 });
 
+// ---------- corbeille ----------
+// Un match en corbeille garde sa fiche (deletedAt) : la surveillance ne le recrée donc pas.
+// Après 24 h, on supprime la fiche et on l'oublie aussi dans state, pour qu'aucun sondage ne la recrée.
+function purgeTrash() {
+  return exclusive(async () => {
+    const now = Date.now();
+    const old = (await allMatches()).filter((m) => m.deletedAt && now - m.deletedAt >= TRASH_MS);
+    if (!old.length) return;
+    const ids = new Set(old.map((m) => m.roomid));
+    for (const id of ids) await deleteMatch(id);
+    const state = await getState();
+    for (const id of ids) delete state.live[id];
+    state.pending = state.pending.filter((j) => !ids.has(j.roomid));
+    await saveState(state);
+    libraryChanged();
+    log('trash purged:', ids.size, 'match(es)');
+  });
+}
+
 // ---------- cycle de vie ----------
 async function ensureRunning() {
   const { enabled, tiers } = await getSettings();
@@ -257,6 +277,7 @@ async function pause() {
 chrome.alarms.create('keepalive', { periodInMinutes: 0.5 });
 chrome.alarms.onAlarm.addListener(ensureRunning);
 chrome.runtime.onStartup.addListener(ensureRunning);
+chrome.runtime.onStartup.addListener(purgeTrash);
 
 chrome.runtime.onInstalled.addListener(async ({ reason, previousVersion }) => {
   // Les versions 1.0.0 / 1.0.1 se connectaient au serveur principal : on repart de zéro.
@@ -268,6 +289,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason, previousVersion }) => {
   }
   const { settings } = await chrome.storage.local.get('settings');
   await chrome.storage.local.set({ settings: { ...DEFAULT_SETTINGS, ...settings } });
+  purgeTrash();
   ensureRunning();
 });
 

@@ -1,10 +1,13 @@
-import { allMatches, importMatches } from './lib/db.js';
+import { allMatches, importMatches, saveMatch } from './lib/db.js';
 import { toID, CLIENT_URL } from './lib/protocol.js';
 
 const $ = (id) => document.getElementById(id);
 
-let matches = [];
+let matches = [];  // matchs visibles (hors corbeille)
+let trash = [];    // matchs en corbeille (deletedAt)
 let selected = null; // id normalisé du joueur, ou null = tous
+let inTrash = false; // vue Corbeille
+const TRASH_MS = 24 * 3600 * 1000; // même délai que background.js
 let page = 1;
 const PAGE_SIZE = 10;
 let playersKey = '';
@@ -12,6 +15,7 @@ let tiersKey = '';
 
 function select(id) {
   selected = id;
+  inTrash = false;
   page = 1;
   renderAll();
 }
@@ -64,7 +68,10 @@ function renderPlayers() {
   });
 
   $('allCount').textContent = matches.length;
-  $('allBtn').classList.toggle('active', selected === null);
+  $('allBtn').classList.toggle('active', selected === null && !inTrash);
+  $('trashBtn').hidden = !trash.length;
+  $('trashBtn').classList.toggle('active', inTrash);
+  $('trashBtn').querySelector('.name').textContent = `Trash (${trash.length})`;
 
   // On ne redessine la liste que si elle a vraiment changé.
   const key = [selected, q, sort, ...list.map((p) => `${p.id}:${p.name}:${p.count}`)].join('|');
@@ -108,6 +115,29 @@ function statusCell(m) {
   return el('span', { class: 'tag' }, m.status || '?');
 }
 
+// ---------- corbeille ----------
+const TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>';
+
+async function setDeleted(roomid, deletedAt) {
+  await saveMatch(roomid, { deletedAt });
+  await chrome.storage.local.set({ dbRev: Date.now() }); // prévient les autres pages
+  load();
+}
+
+// Cellule Replay + corbeille (visible au survol de la ligne).
+function replayCell(m) {
+  const del = el('button', { class: 'del', type: 'button', title: 'Delete', onclick: () => setDeleted(m.roomid, Date.now()) });
+  del.innerHTML = TRASH_ICON;
+  return el('td', {}, el('div', { class: 'replay-cell' }, statusCell(m), del));
+}
+
+function purgeLabel(m) {
+  const left = m.deletedAt + TRASH_MS - Date.now();
+  if (left <= 0) return 'purging soon';
+  const h = Math.floor(left / 3600_000);
+  return h ? `purged in ${h} h` : `purged in ${Math.max(1, Math.round(left / 60_000))} min`;
+}
+
 function resultFor(m, pid) {
   if (m.status !== 'saved') return { text: '—', cls: '' };
   if (m.tie) return { text: 'Draw', cls: 'tie' };
@@ -122,8 +152,10 @@ function renderMatches(players) {
   const player = players.find((p) => p.id === selected);
 
   if (selected && !player) selected = null;
+  if (inTrash && !trash.length) inTrash = false; // corbeille vidée : retour à tous les matchs
 
-  const list = matches.filter((m) => (!selected || m.ids?.includes(selected)) && (!tier || m.format === tier));
+  const source = inTrash ? trash : matches;
+  const list = source.filter((m) => (!selected || m.ids?.includes(selected)) && (!tier || m.format === tier));
 
   const oppOf = (m) => {
     if (!selected) return '';
@@ -135,7 +167,10 @@ function renderMatches(players) {
     return (b.startedAt || 0) - (a.startedAt || 0);
   });
 
-  if (player) {
+  if (inTrash) {
+    $('title').textContent = 'Trash';
+    $('record').textContent = `${list.length} matches · deleted for good after 24 h`;
+  } else if (player) {
     $('title').textContent = player.name;
     const total = player.w + player.l;
     const pct = total ? Math.round((player.w / total) * 100) : 0;
@@ -145,15 +180,27 @@ function renderMatches(players) {
     $('record').textContent = `${list.length} matches`;
   }
 
-  const head = selected
-    ? ['Date', 'Tier', 'Opponent', 'Result', 'Replay']
-    : ['Date', 'Tier', 'Player 1', 'Player 2', 'Replay'];
+  const head = inTrash
+    ? ['Date', 'Tier', 'Player 1', 'Player 2', 'Deleted', '']
+    : selected
+      ? ['Date', 'Tier', 'Opponent', 'Result', 'Replay']
+      : ['Date', 'Tier', 'Player 1', 'Player 2', 'Replay'];
   $('thead').replaceChildren(el('tr', {}, ...head.map((h) => el('th', {}, h))));
 
   const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   page = Math.min(Math.max(page, 1), pages);
   const rows = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((m) => {
     const date = m.startedAt ? fmtDate.format(new Date(m.startedAt)) : '—';
+    if (inTrash) {
+      return el('tr', {},
+        el('td', { class: 'num' }, date),
+        el('td', {}, el('span', { class: 'tier' }, m.format || '?')),
+        el('td', {}, m.p1 || '?'),
+        el('td', {}, m.p2 || '?'),
+        el('td', { class: 'num' }, purgeLabel(m)),
+        el('td', {}, el('button', { class: 'linkbtn', type: 'button', onclick: () => setDeleted(m.roomid, null) }, 'Restore')),
+      );
+    }
     if (selected) {
       const opp = oppOf(m);
       const r = resultFor(m, selected);
@@ -164,7 +211,7 @@ function renderMatches(players) {
           class: 'plink', onclick: () => select(toID(opp)),
         }, opp || '?')),
         el('td', {}, el('span', { class: 'res ' + r.cls }, r.text)),
-        el('td', {}, statusCell(m)),
+        replayCell(m),
       );
     }
     const isWinner = (name) => !!name && !!m.winner && toID(m.winner) === toID(name);
@@ -178,11 +225,12 @@ function renderMatches(players) {
       el('td', {}, el('span', { class: 'tier' }, m.format || '?')),
       el('td', { class: isWinner(m.p1) ? 'winner' : isLoser(m.p1) ? 'loser' : null }, pbtn(m.p1)),
       el('td', { class: isWinner(m.p2) ? 'winner' : isLoser(m.p2) ? 'loser' : null }, pbtn(m.p2)),
-      el('td', {}, statusCell(m)),
+      replayCell(m),
     );
   });
   $('rows').replaceChildren(...rows);
   $('empty').hidden = list.length > 0;
+  $('empty').textContent = inTrash ? 'Trash is empty.' : EMPTY_TEXT;
   renderPager(pages);
 }
 
@@ -228,13 +276,16 @@ function renderAll() {
 }
 
 async function load() {
-  matches = await allMatches();
+  const all = await allMatches();
+  matches = all.filter((m) => !m.deletedAt);
+  trash = all.filter((m) => m.deletedAt);
   renderAll();
 }
 
 // ---------- export / import ----------
 $('export').onclick = async () => {
-  const data = { app: 'smogtours-watch', version: 1, exportedAt: new Date().toISOString(), matches: await allMatches() };
+  const kept = (await allMatches()).filter((m) => !m.deletedAt); // la corbeille n'est pas exportée
+  const data = { app: 'smogtours-watch', version: 1, exportedAt: new Date().toISOString(), matches: kept };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = el('a', { href: URL.createObjectURL(blob), download: `smogtours-replays-${new Date().toISOString().slice(0, 10)}.json` });
   a.click();
@@ -304,7 +355,9 @@ chrome.windows.onBoundsChanged.addListener((win) => {
 fixWindowSize();
 
 // ---------- événements ----------
+const EMPTY_TEXT = $('empty').textContent;
 $('allBtn').onclick = () => select(null);
+$('trashBtn').onclick = () => { selected = null; inTrash = true; page = 1; renderAll(); };
 $('search').oninput = renderPlayers;
 $('playerSort').onchange = renderPlayers;
 $('tierFilter').onchange = () => { page = 1; renderMatches(buildPlayers()); };
