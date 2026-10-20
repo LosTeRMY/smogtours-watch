@@ -154,4 +154,3 @@ td.num { font-variant-numeric: tabular-nums; color: var(--muted); }
 }
 .winner { background: linear-gradient(to right, var(--win-soft), transparent); }
 .loser { background: linear-gradient(to right, var(--loss-soft), transparent); }
-.loser .plink { font-weight: 400; }
