@@ -1,7 +1,7 @@
 // Logique de la bibliothèque, sans rien toucher au DOM : filtres, tris, stats, pagination.
 // Ces fonctions seront réutilisées telles quelles par les composants React.
 
-import { toID } from "../lib/protocol.js";
+import { toID } from "../lib/protocol";
 import type { Match, Player } from "../lib/types";
 
 export const PAGE_SIZE = 10;

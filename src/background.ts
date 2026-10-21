@@ -6,23 +6,47 @@
 //   disparaît du roomlist      -> "ended", on cherche le replay
 //   replay trouvé              -> "saved"  /  pas trouvé après les relances -> "missing"
 
-import { SERVER_URL, CLIENT_URL, REPLAY_BASE, toID, formatOf, replayIdOf, parseReplay } from './lib/protocol.js';
-import { getMatch, saveMatch, clearMatches, allMatches, deleteMatch } from './lib/db.js';
+import {
+  SERVER_URL,
+  CLIENT_URL,
+  REPLAY_BASE,
+  formatOf,
+  replayIdOf,
+  parseReplay,
+} from "./lib/protocol";
+import {
+  getMatch,
+  saveMatch,
+  clearMatches,
+  allMatches,
+  deleteMatch,
+} from "./lib/db";
+import { DEFAULT_SETTINGS, getSettings, type Status } from "./shared/settings";
 
 const POLL_MS = 10_000;
 const TIMEOUT_MS = 8_000;
 const FRESH_MS = 90_000; // au-delà, on a pu rater des choses : pas de notification au réveil
 const RETRY_DELAYS = [5, 15, 30, 60, 120, 300].map((s) => s * 1000);
 const LOG_MAX = 200;
-const DEFAULT_SETTINGS = { enabled: true, tiers: ['gen4ou'], notifications: true };
+
+// Infos d'une room dans la réponse roomlist.
+type RoomInfo = { p1?: string; p2?: string };
+// Replay à récupérer : tentative n° attempt, prochaine tentative à next.
+type PendingJob = { roomid: string; attempt: number; next: number };
+// État persistant de la surveillance.
+interface State {
+  live: Record<string, string>; // roomid -> format
+  pending: PendingJob[];
+  lastPollAt: number;
+}
 
 // ---------- journal ----------
-let logBuf = null;
-let logTimer = null;
-async function log(...parts) {
-  const line = `${new Date().toLocaleTimeString('fr-FR')} ${parts.join(' ')}`;
-  console.log('[smogtours-watch]', line);
-  logBuf ??= (await chrome.storage.local.get('log')).log || [];
+let logBuf: string[] | null = null;
+let logTimer: ReturnType<typeof setTimeout> | undefined;
+async function log(...parts: unknown[]) {
+  const line = `${new Date().toLocaleTimeString("fr-FR")} ${parts.join(" ")}`;
+  console.log("[smogtours-watch]", line);
+  logBuf ??= ((await chrome.storage.local.get("log")).log as string[]) || [];
   logBuf.push(line);
   logBuf.splice(0, logBuf.length - LOG_MAX);
   clearTimeout(logTimer);
@@ -30,41 +54,37 @@ async function log(...parts) {
 }
 
 // ---------- stockage ----------
-async function getSettings() {
-  const { settings } = await chrome.storage.local.get('settings');
-  const s = { ...DEFAULT_SETTINGS, ...settings };
-  s.tiers = [...new Set(s.tiers.map(toID).filter(Boolean))];
-  return s;
+async function getState(): Promise<State> {
+  const { state } = await chrome.storage.local.get("state");
+  return { live: {}, pending: [], lastPollAt: 0, ...(state as Partial<State>) };
 }
-
-// state = { live: {roomid: format}, pending: [{roomid, attempt, next}], lastPollAt }
-async function getState() {
-  const { state } = await chrome.storage.local.get('state');
-  return { live: {}, pending: [], lastPollAt: 0, ...state };
-}
-const saveState = (state) => chrome.storage.local.set({ state });
-const setStatus = (status) => chrome.storage.local.set({ status });
+const saveState = (state: State) => chrome.storage.local.set({ state });
+const setStatus = (status: Status) => chrome.storage.local.set({ status });
 const libraryChanged = () => chrome.storage.local.set({ dbRev: Date.now() });
 
 // Une seule opération sur l'état à la fois.
-let chain = Promise.resolve();
-function exclusive(fn) {
+let chain: Promise<unknown> = Promise.resolve();
+function exclusive<T>(fn: () => Promise<T>): Promise<T> {
   const run = chain.then(fn);
-  chain = run.catch((e) => log('error', e?.message || e));
+  chain = run.catch((e) => log("error", e?.message || e));
   return run;
 }
 
 // ---------- connexion ----------
-let ws = null;
-let waiter = null;
-let pollTimer = null;
+let ws: WebSocket | null = null;
+let waiter: {
+  resolve: (rooms: Record<string, RoomInfo>) => void;
+  reject: (e: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+} | null = null;
+let pollTimer: ReturnType<typeof setInterval> | undefined;
 
 function connect() {
   if (ws) return;
-  log('connecting to', SERVER_URL);
+  log("connecting to", SERVER_URL);
   ws = new WebSocket(SERVER_URL);
   ws.onopen = () => {
-    log('connected');
+    log("connected");
     setStatus({ connected: true });
     clearInterval(pollTimer);
     pollTimer = setInterval(poll, POLL_MS);
@@ -72,37 +92,44 @@ function connect() {
   };
   ws.onmessage = (ev) => onMessage(String(ev.data));
   ws.onclose = () => {
-    log('disconnected');
+    log("disconnected");
     ws = null;
     clearInterval(pollTimer);
-    pollTimer = null;
-    waiter?.reject(new Error('disconnected'));
+    pollTimer = undefined;
+    waiter?.reject(new Error("disconnected"));
     waiter = null;
     setStatus({ connected: false });
     setTimeout(ensureRunning, 5000);
   };
 }
 
-function onMessage(data) {
-  const prefix = '|queryresponse|roomlist|';
-  for (const line of data.split('\n')) {
+function onMessage(data: string) {
+  const prefix = "|queryresponse|roomlist|";
+  for (const line of data.split("\n")) {
     if (line.startsWith(prefix) && waiter) {
       const w = waiter;
       waiter = null;
       clearTimeout(w.timer);
-      try { w.resolve(JSON.parse(line.slice(prefix.length))?.rooms || {}); } catch (e) { w.reject(e); }
-    } else if (line.startsWith('|popup|') || line.startsWith('|error|')) {
-      log('server:', line.slice(0, 200));
+      try {
+        w.resolve(JSON.parse(line.slice(prefix.length))?.rooms || {});
+      } catch (e) {
+        w.reject(e as Error);
+      }
+    } else if (line.startsWith("|popup|") || line.startsWith("|error|")) {
+      log("server:", line.slice(0, 200));
     }
   }
 }
 
 // Une requête à la fois : les réponses du serveur ne disent pas à quel tier elles correspondent.
-function queryRoomlist(tier) {
+function queryRoomlist(tier: string): Promise<Record<string, RoomInfo>> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { waiter = null; reject(new Error('no response')); }, TIMEOUT_MS);
+    const timer = setTimeout(() => {
+      waiter = null;
+      reject(new Error("no response"));
+    }, TIMEOUT_MS);
     waiter = { resolve, reject, timer };
-    ws.send(`|/cmd roomlist ${tier}`);
+    ws!.send(`|/cmd roomlist ${tier}`);
   });
 }
 
@@ -114,17 +141,19 @@ function poll() {
     const state = await getState();
     const now = Date.now();
 
-    const seen = new Map();    // roomid -> {p1, p2}
-    const checked = new Set(); // tiers dont on a bien reçu la liste
+    const seen = new Map<string, RoomInfo>(); // roomid -> {p1, p2}
+    const checked = new Set<string>(); // tiers dont on a bien reçu la liste
     if (ws?.readyState === WebSocket.OPEN) {
       for (const tier of settings.tiers) {
         try {
-          for (const [roomid, info] of Object.entries(await queryRoomlist(tier))) {
+          for (const [roomid, info] of Object.entries(
+            await queryRoomlist(tier),
+          )) {
             if (formatOf(roomid) === tier) seen.set(roomid, info);
           }
           checked.add(tier);
         } catch (e) {
-          log('roomlist', tier, ':', e.message);
+          log("roomlist", tier, ":", (e as Error).message);
         }
       }
     }
@@ -135,11 +164,17 @@ function poll() {
     const notify = settings.notifications && now - state.lastPollAt < FRESH_MS;
     for (const [roomid, { p1, p2 }] of seen) {
       if (state.live[roomid] || (await getMatch(roomid))) continue;
-      const format = formatOf(roomid);
+      const format = formatOf(roomid)!;
       state.live[roomid] = format;
-      await saveMatch(roomid, { format, p1, p2, startedAt: now, status: 'live' });
+      await saveMatch(roomid, {
+        format,
+        p1,
+        p2,
+        startedAt: now,
+        status: "live",
+      });
       if (notify) notifyStart(roomid, format, p1, p2);
-      log('match', roomid, p1, 'vs', p2);
+      log("match", roomid, p1, "vs", p2);
       changed = true;
     }
 
@@ -149,37 +184,49 @@ function poll() {
       if (settings.tiers.includes(format) && !checked.has(format)) continue; // liste non reçue : on attend
       delete state.live[roomid];
       state.pending.push({ roomid, attempt: 0, next: now + RETRY_DELAYS[0] });
-      await saveMatch(roomid, { status: 'ended' });
-      log('ended', roomid);
+      await saveMatch(roomid, { status: "ended" });
+      log("ended", roomid);
       changed = true;
     }
 
     if (checked.size) state.lastPollAt = now;
     // Mise en pause pendant ce sondage : on garde les replays en attente pour la reprise.
     const stillEnabled = (await getSettings()).enabled;
-    if (stillEnabled && await fetchPendingReplays(state)) changed = true;
+    if (stillEnabled && (await fetchPendingReplays(state))) changed = true;
     await saveState(state);
-    if (stillEnabled) await setStatus({ connected: ws?.readyState === WebSocket.OPEN, lastPollAt: state.lastPollAt, liveCount: Object.keys(state.live).length });
+    if (stillEnabled) {
+      await setStatus({
+        connected: ws?.readyState === WebSocket.OPEN,
+        lastPollAt: state.lastPollAt,
+        liveCount: Object.keys(state.live).length,
+      });
+    }
     if (changed) libraryChanged();
   });
 }
 
 // ---------- replays ----------
 // Renvoie true si un match a changé de statut.
-async function fetchPendingReplays(state) {
+async function fetchPendingReplays(state: State): Promise<boolean> {
   const now = Date.now();
-  const remaining = [];
+  const remaining: PendingJob[] = [];
   let changed = false;
   for (const job of state.pending) {
-    if (job.next > now) { remaining.push(job); continue; }
-    if (await fetchReplay(job.roomid)) { changed = true; continue; }
+    if (job.next > now) {
+      remaining.push(job);
+      continue;
+    }
+    if (await fetchReplay(job.roomid)) {
+      changed = true;
+      continue;
+    }
     job.attempt++;
     if (job.attempt < RETRY_DELAYS.length) {
       job.next = now + RETRY_DELAYS[job.attempt];
       remaining.push(job);
     } else {
-      await saveMatch(job.roomid, { status: 'missing' });
-      log('replay not found', job.roomid);
+      await saveMatch(job.roomid, { status: "missing" });
+      log("replay not found", job.roomid);
       changed = true;
     }
   }
@@ -187,10 +234,10 @@ async function fetchPendingReplays(state) {
   return changed;
 }
 
-async function fetchReplay(roomid) {
+async function fetchReplay(roomid: string): Promise<boolean> {
   const id = replayIdOf(roomid);
   try {
-    const res = await fetch(`${REPLAY_BASE}/${id}.json`, { cache: 'no-store' });
+    const res = await fetch(`${REPLAY_BASE}/${id}.json`, { cache: "no-store" });
     if (!res.ok) return false;
     const r = parseReplay(await res.json());
     await saveMatch(roomid, {
@@ -198,24 +245,24 @@ async function fetchReplay(roomid) {
       startedAt: r.startedAt ?? undefined,
       format: r.format ?? undefined,
       replayUrl: `${REPLAY_BASE}/${id}`,
-      status: 'saved',
+      status: "saved",
     });
-    log('replay', id);
+    log("replay", id);
     return true;
   } catch (e) {
-    log('replay', id, ':', e.message);
+    log("replay", id, ":", (e as Error).message);
     return false;
   }
 }
 
 // ---------- notification ----------
-function notifyStart(roomid, format, p1, p2) {
+function notifyStart(roomid: string, format: string, p1?: string, p2?: string) {
   chrome.notifications.create(roomid, {
-    type: 'basic',
-    iconUrl: 'icons/icon128.png',
+    type: "basic",
+    iconUrl: "icons/icon128.png",
     title: `${format} — match started`,
-    message: `${p1 || '?'} vs ${p2 || '?'}`,
-    contextMessage: 'smogtours · clic pour regarder',
+    message: `${p1 || "?"} vs ${p2 || "?"}`,
+    contextMessage: "smogtours · clic pour regarder",
     silent: true,
   });
 }
@@ -240,7 +287,7 @@ function purgeTrash() {
     state.pending = state.pending.filter((j) => !ids.has(j.roomid));
     await saveState(state);
     libraryChanged();
-    log('trash purged:', ids.size, 'match(es)');
+    log("trash purged:", ids.size, "match(es)");
   });
 }
 
@@ -256,91 +303,119 @@ async function ensureRunning() {
 // Les matchs live et les replays en attente restent dans state pour la reprise.
 async function pause() {
   clearInterval(pollTimer);
-  pollTimer = null;
+  pollTimer = undefined;
   if (ws) {
     const w = ws;
     ws = null;
     w.onclose = null; // pas de reconnexion automatique
     w.close();
-    waiter?.reject(new Error('paused'));
+    waiter?.reject(new Error("paused"));
     waiter = null;
-    log('paused');
+    log("paused");
   }
-  const { status = {} } = await chrome.storage.local.get('status');
+  const status =
+    ((await chrome.storage.local.get("status")).status as Status) || {};
   if (!status.paused) {
     const { lastPollAt } = await getState();
-    await setStatus({ connected: false, paused: true, lastPollAt, liveCount: status.liveCount });
+    await setStatus({
+      connected: false,
+      paused: true,
+      lastPollAt,
+      liveCount: status.liveCount,
+    });
   }
 }
 
-chrome.alarms.create('keepalive', { periodInMinutes: 0.5 });
+chrome.alarms.create("keepalive", { periodInMinutes: 0.5 });
 chrome.alarms.onAlarm.addListener(ensureRunning);
 chrome.runtime.onStartup.addListener(ensureRunning);
 chrome.runtime.onStartup.addListener(purgeTrash);
 
 chrome.runtime.onInstalled.addListener(async ({ reason, previousVersion }) => {
   // Les versions 1.0.0 / 1.0.1 se connectaient au serveur principal : on repart de zéro.
-  if (reason === 'update' && /^1\.0\.[01]$/.test(previousVersion)) {
+  if (reason === "update" && /^1\.0\.[01]$/.test(previousVersion ?? "")) {
     await clearMatches();
-    await chrome.storage.local.remove(['state', 'lastGoodUrl']);
+    await chrome.storage.local.remove(["state", "lastGoodUrl"]);
     libraryChanged();
     log(`updated from ${previousVersion}: library cleared`);
   }
-  const { settings } = await chrome.storage.local.get('settings');
-  await chrome.storage.local.set({ settings: { ...DEFAULT_SETTINGS, ...settings } });
+  const { settings } = await chrome.storage.local.get("settings");
+  await chrome.storage.local.set({
+    settings: { ...DEFAULT_SETTINGS, ...(settings as object) },
+  });
   purgeTrash();
   ensureRunning();
 });
 
 chrome.storage.onChanged.addListener((changes) => {
-  if (changes.log?.newValue?.length === 0) logBuf = [];
+  if ((changes.log?.newValue as string[] | undefined)?.length === 0)
+    logBuf = [];
   if (changes.settings) ensureRunning();
 });
 
 // Bibliothèque : une seule fenêtre dédiée. La taille exacte (1100 × 620 de contenu)
-// est corrigée par library.js une fois la fenêtre ouverte.
+// est corrigée par la bibliothèque une fois la fenêtre ouverte (useFixedWindowSize).
 async function openLibrary() {
-  const url = chrome.runtime.getURL('library.html');
-  const wins = await chrome.windows.getAll({ populate: true, windowTypes: ['popup'] });
+  const url = chrome.runtime.getURL("library.html");
+  const wins = await chrome.windows.getAll({
+    populate: true,
+    windowTypes: ["popup"],
+  });
   const existing = wins.find((w) => w.tabs?.some((t) => t.url === url));
-  if (existing) {
+  if (existing?.id != null) {
     await chrome.storage.session.set({ libWindowId: existing.id });
-    await chrome.windows.update(existing.id, { focused: true, drawAttention: true });
+    await chrome.windows.update(existing.id, {
+      focused: true,
+      drawAttention: true,
+    });
     return;
   }
-  const win = await chrome.windows.create({ url, type: 'popup', width: 1100, height: 620 });
-  await chrome.storage.session.set({ libWindowId: win.id });
+  const win = await chrome.windows.create({
+    url,
+    type: "popup",
+    width: 1100,
+    height: 620,
+  });
+  await chrome.storage.session.set({ libWindowId: win?.id });
 }
 
 // Fermeture de la bibliothèque : on vide la corbeille.
 chrome.windows.onRemoved.addListener(async (windowId) => {
-  const { libWindowId } = await chrome.storage.session.get('libWindowId');
+  const { libWindowId } = await chrome.storage.session.get("libWindowId");
   if (windowId !== libWindowId) return;
-  await chrome.storage.session.remove('libWindowId');
+  await chrome.storage.session.remove("libWindowId");
   purgeTrash();
 });
 
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg?.type === 'openLibrary') {
-    openLibrary().then(() => sendResponse(true), () => sendResponse(false));
-    return true;
-  }
-  if (msg?.type === 'pollNow') {
-    ensureRunning().then(poll).then(() => sendResponse(true), () => sendResponse(false));
-    return true;
-  }
-  if (msg?.type === 'retryReplay') {
-    exclusive(async () => {
-      const state = await getState();
-      if (!state.pending.some((j) => j.roomid === msg.roomid)) {
-        state.pending.push({ roomid: msg.roomid, attempt: 0, next: 0 });
-      }
-      await saveState(state);
-      // En pause, poll() ne fait rien : le match attend la reprise en "fetching…".
-      await saveMatch(msg.roomid, { status: 'ended' });
-      libraryChanged();
-    }).then(poll).then(() => sendResponse(true), () => sendResponse(false));
-    return true;
+// Messages envoyés par le popup et la bibliothèque.
+type Message =
+  | { type: "openLibrary" }
+  | { type: "pollNow" }
+  | { type: "retryReplay"; roomid: string };
+
+chrome.runtime.onMessage.addListener((msg: Message, _sender, sendResponse) => {
+  const reply = (p: Promise<unknown>) => {
+    p.then(
+      () => sendResponse(true),
+      () => sendResponse(false),
+    );
+    return true; // réponse asynchrone
+  };
+  if (msg?.type === "openLibrary") return reply(openLibrary());
+  if (msg?.type === "pollNow") return reply(ensureRunning().then(poll));
+  if (msg?.type === "retryReplay") {
+    return reply(
+      exclusive(async () => {
+        const state = await getState();
+        if (!state.pending.some((j) => j.roomid === msg.roomid)) {
+          state.pending.push({ roomid: msg.roomid, attempt: 0, next: 0 });
+        }
+        await saveState(state);
+        // En pause, poll() ne fait rien : le match attend la reprise en "fetching…".
+        await saveMatch(msg.roomid, { status: "ended" });
+        libraryChanged();
+      }).then(poll),
+    );
   }
 });
 

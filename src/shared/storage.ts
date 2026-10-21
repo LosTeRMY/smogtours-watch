@@ -1,37 +1,9 @@
-// Accès à chrome.storage.local, partagé par le popup et la bibliothèque.
+// Hooks React pour lire chrome.storage.local (popup et bibliothèque).
 
 import { useEffect, useState } from "react";
+import { DEFAULT_SETTINGS, type Settings } from "./settings";
 
-export interface Settings {
-  enabled: boolean; // surveillance active (false = pause)
-  tiers: string[];
-  notifications: boolean;
-}
-
-export interface Status {
-  connected?: boolean;
-  paused?: boolean;
-  lastPollAt?: number;
-  liveCount?: number;
-}
-
-export const DEFAULT_SETTINGS: Settings = {
-  enabled: true,
-  tiers: ["gen4ou"],
-  notifications: true,
-};
-
-export async function getSettings(): Promise<Settings> {
-  const { settings } = await chrome.storage.local.get("settings");
-  return { ...DEFAULT_SETTINGS, ...(settings as Partial<Settings>) };
-}
-
-// Fusionne un changement dans les réglages (ex. saveSettings({ enabled: false })).
-export async function saveSettings(patch: Partial<Settings>): Promise<void> {
-  await chrome.storage.local.set({
-    settings: { ...(await getSettings()), ...patch },
-  });
-}
+export { saveSettings, type Settings, type Status } from "./settings";
 
 // Hook React : lit une clé de chrome.storage.local et se met à jour dès qu'elle change.
 // Ex. const status = useStorage<Status>('status', {});

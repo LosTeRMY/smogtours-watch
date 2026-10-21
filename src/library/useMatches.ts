@@ -2,7 +2,7 @@
 // signale un changement (clé dbRev dans chrome.storage).
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { allMatches } from "../lib/db.js";
+import { allMatches } from "../lib/db";
 import type { Match } from "../lib/types";
 import { splitTrash } from "./data";
 

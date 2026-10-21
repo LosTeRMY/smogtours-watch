@@ -6,8 +6,6 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["chrome", "vite/client"],
     "strict": true,
-    "allowJs": true,
-    "checkJs": false,
     "resolveJsonModule": true,
     "noEmit": true,
     "skipLibCheck": true,

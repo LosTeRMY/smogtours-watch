@@ -1,7 +1,7 @@
 // Tiers surveillés : une chip par tier (× pour retirer) + champ d'ajout (composant Figma « Chip tier »).
 
 import { useState, type FormEvent } from "react";
-import { toID } from "../lib/protocol.js";
+import { toID } from "../lib/protocol";
 
 interface Props {
   tiers: string[];

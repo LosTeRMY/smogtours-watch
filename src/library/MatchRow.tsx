@@ -3,7 +3,7 @@
 // - player : Date · Tier · Opponent · Result · Replay
 // - trash  : Date · Tier · Player 1 · Player 2 · Restore
 
-import { toID } from "../lib/protocol.js";
+import { toID } from "../lib/protocol";
 import type { Match } from "../lib/types";
 import { isLoser, isWinner, opponentOf, resultFor } from "./data";
 import { TrashIcon } from "./icons";

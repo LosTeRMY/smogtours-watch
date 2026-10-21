@@ -2,7 +2,7 @@
 // Replay ↗ / live ↗ / fetching… / not fetched ↻.
 
 import { useState } from "react";
-import { CLIENT_URL } from "../lib/protocol.js";
+import { CLIENT_URL } from "../lib/protocol";
 import type { Match } from "../lib/types";
 
 export default function StatusCell({ m }: { m: Match }) {

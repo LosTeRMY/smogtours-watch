@@ -1,6 +1,6 @@
 // Actions de la bibliothèque qui écrivent dans la base : corbeille, export, import.
 
-import { allMatches, importMatches, saveMatch } from "../lib/db.js";
+import { allMatches, importMatches, saveMatch } from "../lib/db";
 import type { Match } from "../lib/types";
 
 // Prévient les autres pages (et le popup) qu'un match a changé.
