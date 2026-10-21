@@ -14,7 +14,6 @@ const TIMEOUT_MS = 8_000;
 const FRESH_MS = 90_000; // au-delà, on a pu rater des choses : pas de notification au réveil
 const RETRY_DELAYS = [5, 15, 30, 60, 120, 300].map((s) => s * 1000);
 const LOG_MAX = 200;
-const TRASH_MS = 24 * 3600 * 1000; // durée en corbeille avant suppression définitive
 const DEFAULT_SETTINGS = { enabled: true, tiers: ['gen4ou'], notifications: true };
 
 // ---------- journal ----------
@@ -228,11 +227,11 @@ chrome.notifications.onClicked.addListener((id) => {
 
 // ---------- corbeille ----------
 // Un match en corbeille garde sa fiche (deletedAt) : la surveillance ne le recrée donc pas.
-// Après 24 h, on supprime la fiche et on l'oublie aussi dans state, pour qu'aucun sondage ne la recrée.
+// La corbeille est vidée à la fermeture de la bibliothèque (et au démarrage, par sécurité) :
+// on supprime la fiche et on l'oublie aussi dans state, pour qu'aucun sondage ne la recrée.
 function purgeTrash() {
   return exclusive(async () => {
-    const now = Date.now();
-    const old = (await allMatches()).filter((m) => m.deletedAt && now - m.deletedAt >= TRASH_MS);
+    const old = (await allMatches()).filter((m) => m.deletedAt);
     if (!old.length) return;
     const ids = new Set(old.map((m) => m.roomid));
     for (const id of ids) await deleteMatch(id);
@@ -305,11 +304,21 @@ async function openLibrary() {
   const wins = await chrome.windows.getAll({ populate: true, windowTypes: ['popup'] });
   const existing = wins.find((w) => w.tabs?.some((t) => t.url === url));
   if (existing) {
+    await chrome.storage.session.set({ libWindowId: existing.id });
     await chrome.windows.update(existing.id, { focused: true, drawAttention: true });
     return;
   }
-  await chrome.windows.create({ url, type: 'popup', width: 1100, height: 620 });
+  const win = await chrome.windows.create({ url, type: 'popup', width: 1100, height: 620 });
+  await chrome.storage.session.set({ libWindowId: win.id });
 }
+
+// Fermeture de la bibliothèque : on vide la corbeille.
+chrome.windows.onRemoved.addListener(async (windowId) => {
+  const { libWindowId } = await chrome.storage.session.get('libWindowId');
+  if (windowId !== libWindowId) return;
+  await chrome.storage.session.remove('libWindowId');
+  purgeTrash();
+});
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'openLibrary') {

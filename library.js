@@ -7,7 +7,6 @@ let matches = [];  // matchs visibles (hors corbeille)
 let trash = [];    // matchs en corbeille (deletedAt)
 let selected = null; // id normalisé du joueur, ou null = tous
 let inTrash = false; // vue Corbeille
-const TRASH_MS = 24 * 3600 * 1000; // même délai que background.js
 let page = 1;
 const PAGE_SIZE = 10;
 let playersKey = '';
@@ -71,7 +70,7 @@ function renderPlayers() {
   $('allBtn').classList.toggle('active', selected === null && !inTrash);
   $('trashBtn').hidden = !trash.length;
   $('trashBtn').classList.toggle('active', inTrash);
-  $('trashBtn').querySelector('.name').textContent = `Trash (${trash.length})`;
+  $('trashCount').textContent = trash.length;
 
   // On ne redessine la liste que si elle a vraiment changé.
   const key = [selected, q, sort, ...list.map((p) => `${p.id}:${p.name}:${p.count}`)].join('|');
@@ -131,13 +130,6 @@ function replayCell(m) {
   return el('td', {}, el('div', { class: 'replay-cell' }, statusCell(m), del));
 }
 
-function purgeLabel(m) {
-  const left = m.deletedAt + TRASH_MS - Date.now();
-  if (left <= 0) return 'purging soon';
-  const h = Math.floor(left / 3600_000);
-  return h ? `purged in ${h} h` : `purged in ${Math.max(1, Math.round(left / 60_000))} min`;
-}
-
 function resultFor(m, pid) {
   if (m.status !== 'saved') return { text: '—', cls: '' };
   if (m.tie) return { text: 'Draw', cls: 'tie' };
@@ -169,7 +161,7 @@ function renderMatches(players) {
 
   if (inTrash) {
     $('title').textContent = 'Trash';
-    $('record').textContent = `${list.length} matches · deleted for good after 24 h`;
+    $('record').textContent = `${list.length} matches · emptied when the library closes`;
   } else if (player) {
     $('title').textContent = player.name;
     const total = player.w + player.l;
@@ -181,7 +173,7 @@ function renderMatches(players) {
   }
 
   const head = inTrash
-    ? ['Date', 'Tier', 'Player 1', 'Player 2', 'Deleted', '']
+    ? ['Date', 'Tier', 'Player 1', 'Player 2', '']
     : selected
       ? ['Date', 'Tier', 'Opponent', 'Result', 'Replay']
       : ['Date', 'Tier', 'Player 1', 'Player 2', 'Replay'];
@@ -197,7 +189,6 @@ function renderMatches(players) {
         el('td', {}, el('span', { class: 'tier' }, m.format || '?')),
         el('td', {}, m.p1 || '?'),
         el('td', {}, m.p2 || '?'),
-        el('td', { class: 'num' }, purgeLabel(m)),
         el('td', {}, el('button', { class: 'linkbtn', type: 'button', onclick: () => setDeleted(m.roomid, null) }, 'Restore')),
       );
     }
