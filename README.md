@@ -1,6 +1,6 @@
 # Smogtours Watch
 
-A Chrome extension for [smogtours](https://smogtours.psim.us), Smogon's Pokémon Showdown tournament server. It tells you when a match starts in the tiers you follow, saves the replay automatically when the match ends, and keeps a library of every replay, organized by player.
+A Chrome extension for [smogtours](https://smogtours.psim.us), Smogon's Pokémon Showdown tournament server. It tells you when a match starts in the tiers you follow, saves the replay automatically, and keeps a library of every replay, organized by player.
 
 > Not affiliated with Smogon or Pokémon Showdown.
 
