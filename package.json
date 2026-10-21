@@ -1,0 +1,15 @@
+{
+  "name": "smogtours-watch",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "3.0.0",
+    "@types/chrome": "0.3.5",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  }
+}

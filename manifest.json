@@ -7,7 +7,7 @@
   "permissions": ["notifications", "storage", "alarms", "unlimitedStorage"],
   "host_permissions": ["https://replay.pokemonshowdown.com/*"],
   "background": {
-    "service_worker": "background.js",
+    "service_worker": "src/background.js",
     "type": "module"
   },
   "action": {
