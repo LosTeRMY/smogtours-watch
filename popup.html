@@ -1,54 +1,69 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Smogtours Watch</title>
-  <script src="theme.js"></script>
-  <link rel="stylesheet" href="ui.css">
-</head>
-<body class="popup">
-  <!-- Barre du haut : nom + pastille de statut (interrupteur pause / reprise) -->
-  <header class="bar">
-    <span class="brand"><img src="icons/icon48.png" alt="">Smogtours Watch</span>
-    <span class="spacer"></span>    <button id="status" class="status" type="button" role="switch"><span class="status-label"><span id="statusText">…</span><span class="sizer" aria-hidden="true">connected</span></span><span class="knob"></span></button>
-  </header>
+  <head>
+    <meta charset="utf-8" />
+    <title>Smogtours Watch</title>
+    <script src="theme.js"></script>
+    <link rel="stylesheet" href="ui.css" />
+  </head>
+  <body class="popup">
+    <!-- Barre du haut : nom + pastille de statut -->
+    <header class="bar">
+      <span class="brand">
+        <img src="icons/icon48.png" alt="" />
+        Smogtours Watch
+      </span>
+      <span class="spacer"></span>
+      <button id="status" class="status" type="button" role="switch">
+        <span class="status-label">
+          <span id="statusText">…</span>
+          <span class="sizer" aria-hidden="true">connected</span>
+        </span>
+        <span class="knob"></span>
+      </button>
+    </header>
 
-  <!-- Interrupteur des notifications -->
-  <section class="block">
-    <label class="switch-row">
-      <span>Match notifications</span>
-      <input type="checkbox" id="notif" class="switch">
-    </label>
-  </section>
+    <!-- Interrupteur des notifications -->
+    <section class="block">
+      <label class="switch-row">
+        <span>Match notifications</span>
+        <input type="checkbox" id="notif" class="switch" />
+      </label>
+    </section>
 
-  <!-- Tiers surveillés : chips + ajout -->
-  <section class="block">
-    <h2>Watched tiers</h2>
-    <div id="tiers" class="chips"></div>
-    <form id="addTier" class="add">
-      <input id="tierInput" placeholder="e.g. gen4ou, gen7ou, gen4ubers" autocomplete="off">
-      <button type="submit">Add</button>
-    </form>
-    <p class="hint">The tier ID is the one in a match URL: battle-<b>gen4ou</b>-123456</p>
-  </section>
+    <!-- Tiers surveillés : chips + ajout -->
+    <section class="block">
+      <h2>Watched tiers</h2>
+      <div id="tiers" class="chips"></div>
+      <form id="addTier" class="add">
+        <input
+          id="tierInput"
+          placeholder="e.g. gen4ou, gen7ou, gen4ubers"
+          autocomplete="off" />
+        <button type="submit">Add</button>
+      </form>
+      <!-- prettier-ignore : pas d'espace autour de <b>, sinon « battle- gen4ou -123456 » -->
+      <!-- prettier-ignore -->
+      <p class="hint">The tier ID is the one in a match URL: battle-<b>gen4ou</b>-123456</p>
+    </section>
 
-  <!-- Boutons Open library / Refresh -->
-  <section class="block row">
-    <button id="openLib" class="primary">Open library</button>
-    <button id="pollNow" title="Query the server now">Refresh</button>
-  </section>
+    <!-- Boutons Open library / Refresh -->
+    <section class="block row">
+      <button id="openLib" class="primary">Open library</button>
+      <button id="pollNow" title="Query the server now">Refresh</button>
+    </section>
 
-  <!-- Debug (replié) : dernier sondage + journal -->
-  <details class="block">
-    <summary>Debug</summary>
-    <p class="meta" id="meta"></p>
-    <div class="row">
-      <button id="copyLog">Copy log</button>
-      <button id="clearLog">Clear</button>
-    </div>
-    <pre id="log" class="log"></pre>
-  </details>
+    <!-- Debug (replié) : dernier sondage + journal -->
+    <details class="block">
+      <summary>Debug</summary>
+      <p class="meta" id="meta"></p>
+      <div class="row">
+        <button id="copyLog">Copy log</button>
+        <button id="clearLog">Clear</button>
+      </div>
+      <pre id="log" class="log"></pre>
+    </details>
 
-  <script src="popup.js" type="module"></script>
-</body>
+    <script src="popup.js" type="module"></script>
+  </body>
 </html>
