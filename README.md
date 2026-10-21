@@ -31,20 +31,6 @@ The extension is not on the Chrome Web Store, so you load it manually. All you n
 6. Pin the extension to the toolbar to reach the popup easily.
 
 **To update:** download the new zip, unzip it over the same folder, then click the reload button on the extension's card in `chrome://extensions`. Your library and settings are kept.
-
-### Build from source
-
-To build the extension yourself or change the code, you also need [Node.js](https://nodejs.org) 20 or later.
-
-```sh
-git clone https://github.com/<your-username>/smogtours-watch.git
-cd smogtours-watch
-npm install
-npm run build
-```
-
-Then follow steps 3 to 6 above and select the `dist` folder.
-
 ## Usage
 
 1. Click the extension icon to open the popup.
@@ -61,16 +47,17 @@ Then follow steps 3 to 6 above and select the `dist` folder.
 
 ## Development
 
+Requires Node.js 20+. Stack: React 19, TypeScript, Vite + [CRXJS](https://crxjs.dev), Manifest V3.
+
 ```sh
+git clone https://github.com/<your-username>/smogtours-watch.git
+cd smogtours-watch
 npm install
 npm run dev        # rebuilds dist/ on every save
-npm run build      # type-checks, then builds dist/
-npm run typecheck  # type-check only
+npm run build      # type-check + production build
 ```
 
-After each rebuild, click reload on the extension's card in `chrome://extensions`.
-
-Stack: React 19, TypeScript, Vite with [CRXJS](https://crxjs.dev), Manifest V3.
+Load `dist/` as an unpacked extension, and reload it in `chrome://extensions` after each build.
 
 ```
 src/
