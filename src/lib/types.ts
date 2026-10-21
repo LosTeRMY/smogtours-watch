@@ -1,6 +1,6 @@
 // Types partagés : une fiche de match telle qu'enregistrée dans IndexedDB (lib/db.js).
 
-export type MatchStatus = 'live' | 'ended' | 'saved' | 'missing';
+export type MatchStatus = "live" | "ended" | "saved" | "missing";
 
 export interface Match {
   roomid: string; // "battle-gen4ou-123456" (clé)

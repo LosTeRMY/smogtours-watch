@@ -10,7 +10,12 @@ export default function Switch({ label, checked, onChange }: Props) {
   return (
     <label className="switch-row">
       <span>{label}</span>
-      <input type="checkbox" className="switch" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <input
+        type="checkbox"
+        className="switch"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
     </label>
   );
 }

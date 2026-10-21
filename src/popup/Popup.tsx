@@ -1,18 +1,23 @@
 // Le popup complet : assemble les composants, de haut en bas.
 
-import { saveSettings, useSettings, useStorage, type Status } from '../shared/storage';
-import StatusPill from './StatusPill';
-import Switch from './Switch';
-import TierChips from './TierChips';
-import DebugPanel from './DebugPanel';
-import RefreshButton from './RefreshButton';
+import {
+  saveSettings,
+  useSettings,
+  useStorage,
+  type Status,
+} from "../shared/storage";
+import StatusPill from "./StatusPill";
+import Switch from "./Switch";
+import TierChips from "./TierChips";
+import DebugPanel from "./DebugPanel";
+import RefreshButton from "./RefreshButton";
 
 export default function Popup() {
   const settings = useSettings();
-  const status = useStorage<Status>('status', {});
+  const status = useStorage<Status>("status", {});
 
   async function openLibrary() {
-    await chrome.runtime.sendMessage({ type: 'openLibrary' });
+    await chrome.runtime.sendMessage({ type: "openLibrary" });
     window.close();
   }
 
@@ -44,7 +49,10 @@ export default function Popup() {
       {/* Tiers surveillés : chips + ajout */}
       <section className="block">
         <h2>Watched tiers</h2>
-        <TierChips tiers={settings.tiers} onChange={(tiers) => saveSettings({ tiers })} />
+        <TierChips
+          tiers={settings.tiers}
+          onChange={(tiers) => saveSettings({ tiers })}
+        />
       </section>
 
       {/* Boutons Open library / Refresh */}

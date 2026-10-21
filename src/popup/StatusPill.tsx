@@ -8,8 +8,12 @@ interface Props {
 }
 
 export default function StatusPill({ enabled, connected, onToggle }: Props) {
-  const text = enabled && connected ? 'connected' : 'offline';
-  const cls = !enabled ? 'status off paused' : connected ? 'status ok' : 'status off';
+  const text = enabled && connected ? "connected" : "offline";
+  const cls = !enabled
+    ? "status off paused"
+    : connected
+      ? "status ok"
+      : "status off";
 
   return (
     <button
@@ -17,7 +21,7 @@ export default function StatusPill({ enabled, connected, onToggle }: Props) {
       type="button"
       role="switch"
       aria-checked={enabled}
-      title={enabled ? 'Pause monitoring' : 'Resume monitoring'}
+      title={enabled ? "Pause monitoring" : "Resume monitoring"}
       onClick={onToggle}>
       <span className="status-label">
         <span>{text}</span>

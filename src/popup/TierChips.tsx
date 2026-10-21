@@ -1,7 +1,7 @@
 // Tiers surveillés : une chip par tier (× pour retirer) + champ d'ajout (composant Figma « Chip tier »).
 
-import { useState, type FormEvent } from 'react';
-import { toID } from '../lib/protocol.js';
+import { useState, type FormEvent } from "react";
+import { toID } from "../lib/protocol.js";
 
 interface Props {
   tiers: string[];
@@ -9,14 +9,17 @@ interface Props {
 }
 
 export default function TierChips({ tiers, onChange }: Props) {
-  const [input, setInput] = useState(''); // texte en cours de saisie
+  const [input, setInput] = useState(""); // texte en cours de saisie
 
   function add(e: FormEvent) {
     e.preventDefault(); // pas de rechargement de la page
-    const added = input.split(/[,\s]+/).map(toID).filter(Boolean);
+    const added = input
+      .split(/[,\s]+/)
+      .map(toID)
+      .filter(Boolean);
     if (!added.length) return;
     onChange([...new Set([...tiers, ...added])]);
-    setInput('');
+    setInput("");
   }
 
   return (
@@ -26,7 +29,10 @@ export default function TierChips({ tiers, onChange }: Props) {
           tiers.map((t) => (
             <span className="chip" key={t}>
               {t}
-              <button type="button" title={`Remove ${t}`} onClick={() => onChange(tiers.filter((v) => v !== t))}>
+              <button
+                type="button"
+                title={`Remove ${t}`}
+                onClick={() => onChange(tiers.filter((v) => v !== t))}>
                 ×
               </button>
             </span>
