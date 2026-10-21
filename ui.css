@@ -144,7 +144,7 @@ td.num { font-variant-numeric: tabular-nums; color: var(--muted); }
 .linkbtn:hover { text-decoration: underline; }
 /* Corbeille : icône visible seulement au survol de la ligne, 50 % puis 100 % au survol de l'icône. */
 .replay-cell { display: flex; align-items: center; gap: 8px; }
-.del { display: inline-flex; height: auto; margin: 0 auto; padding: 0; border: 0; background: none; color: var(--muted); opacity: 0; transition: opacity .1s; }
+.del { display: inline-flex; height: auto; margin-left: auto; padding: 0; border: 0; background: none; color: var(--muted); opacity: 0; transition: opacity .1s; }
 .del svg { width: 16px; height: 16px; }
 tbody tr:hover .del, .del:focus-visible { opacity: .5; }
 tbody tr .del:hover { opacity: 1; }
