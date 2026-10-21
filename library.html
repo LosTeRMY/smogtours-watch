@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="ui.css">
 </head>
 <body class="library">
+  <!-- Barre du haut : titre, totaux, Export / Import, bouton thème -->
   <header class="bar lib-bar">
     <span class="brand"><img src="icons/icon48.png" alt="">Replay library</span>
     <span id="totals" class="meta"></span>
@@ -18,7 +19,9 @@
   </header>
 
   <main class="cols">
+    <!-- Colonne de gauche : joueurs -->
     <aside class="players">
+      <!-- Recherche + tri des joueurs -->
       <div class="players-tools">
         <input id="search" type="search" placeholder="Player…" autocomplete="off">
         <select id="playerSort" title="Sort players">
@@ -27,14 +30,19 @@
           <option value="recent">Latest match</option>
         </select>
       </div>
+      <!-- Entrée « All matches » -->
       <button id="allBtn" class="player all">
         <span class="name">All matches</span><span class="count" id="allCount"></span>
       </button>
+      <!-- Liste des joueurs (remplie par library.js) -->
       <ul id="playerList" class="player-list"></ul>
+      <!-- Entrée « Trash (N) », masquée si la corbeille est vide -->
       <button id="trashBtn" class="player trash" hidden><span class="name">Trash</span></button>
     </aside>
 
+    <!-- Partie droite : matchs -->
     <section class="detail">
+      <!-- Titre (joueur / All matches / Trash) + filtres -->
       <div class="detail-head">
         <div>
           <h1 id="title">All matches</h1>
@@ -49,13 +57,14 @@
           </select>
         </div>
       </div>
+      <!-- Tableau des matchs (lignes créées par library.js), pagination, message vide -->
       <div class="table-wrap" id="tableWrap">
         <table>
           <thead id="thead"></thead>
           <tbody id="rows"></tbody>
         </table>
         <nav id="pager" class="pager" hidden></nav>
-        <p id="empty" class="empty" hidden>No matches yet. They will appear here as soon as a match in one of your tiers ends.</p>
+        <p id="empty" class="empty" hidden>No matches yet. They will appear here as soon as a match in one of your tiers starts.</p>
       </div>
     </section>
   </main>

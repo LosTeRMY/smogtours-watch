@@ -7,18 +7,21 @@
   <link rel="stylesheet" href="ui.css">
 </head>
 <body class="popup">
+  <!-- Barre du haut : nom + pastille de statut (interrupteur pause / reprise) -->
   <header class="bar">
     <span class="brand"><img src="icons/icon48.png" alt="">Smogtours Watch</span>
     <span class="spacer"></span>    <button id="status" class="status" type="button" role="switch"><span class="status-label"><span id="statusText">…</span><span class="sizer" aria-hidden="true">connected</span></span><span class="knob"></span></button>
   </header>
 
+  <!-- Interrupteur des notifications -->
   <section class="block">
     <label class="switch-row">
-      <span>Match Notifications</span>
+      <span>Match notifications</span>
       <input type="checkbox" id="notif" class="switch">
     </label>
   </section>
 
+  <!-- Tiers surveillés : chips + ajout -->
   <section class="block">
     <h2>Watched tiers</h2>
     <div id="tiers" class="chips"></div>
@@ -29,11 +32,13 @@
     <p class="hint">The tier ID is the one in a match URL: battle-<b>gen4ou</b>-123456</p>
   </section>
 
+  <!-- Boutons Open library / Refresh -->
   <section class="block row">
     <button id="openLib" class="primary">Open library</button>
     <button id="pollNow" title="Query the server now">Refresh</button>
   </section>
 
+  <!-- Debug (replié) : dernier sondage + journal -->
   <details class="block">
     <summary>Debug</summary>
     <p class="meta" id="meta"></p>
