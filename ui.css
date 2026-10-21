@@ -113,7 +113,8 @@ body.library { height: 100vh; min-width: 1100px; min-height: 620px; display: fle
 .player:hover { background: var(--bg); }
 .player.active { background: var(--accent-soft); }
 .player.all { border-bottom: 1px solid var(--line); font-weight: 600; padding: 10px 12px; }
-.player.trash { border-top: 1px solid var(--line); font-weight: 600; padding: 10px 12px; color: var(--muted); }
+.player.trash { border-top: 1px solid var(--line); font-weight: 400; padding: 10px 12px; color: var(--muted); }
+.player.trash svg { width: 16px; height: 16px; flex: none; }
 .player.trash.active { color: var(--text); }
 .player[hidden] { display: none; }
 .player .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -146,7 +147,7 @@ td.num { font-variant-numeric: tabular-nums; color: var(--muted); }
 .replay-cell { display: flex; align-items: center; gap: 8px; }
 .del { display: inline-flex; height: auto; margin-left: auto; padding: 0; border: 0; background: none; color: var(--muted); opacity: 0; transition: opacity .1s; }
 .del svg { width: 16px; height: 16px; }
-tbody tr:hover .del, .del:focus-visible { opacity: .5; }
+tbody tr:hover .del, .del:focus-visible { opacity: .25; }
 tbody tr .del:hover { opacity: 1; }
 .tag { height: auto; font-size: var(--fs-label); padding: 2px 8px; border-radius: 99px; background: var(--line); color: var(--muted); text-decoration: none; border: 0; }
 .tag.live { background: var(--live-soft); color: var(--live); }
