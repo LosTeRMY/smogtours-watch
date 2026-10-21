@@ -1,5 +1,9 @@
 import { allMatches, importMatches, saveMatch } from './lib/db.js';
 import { toID, CLIENT_URL } from './lib/protocol.js';
+import {
+  splitTrash, buildPlayers, filterPlayers, recordOf, tiersOf, opponentOf,
+  filterMatches, sortMatches, isWinner, isLoser, resultFor, paginate, pagerItems,
+} from './library/data';
 
 const $ = (id) => document.getElementById(id);
 
@@ -8,7 +12,6 @@ let trash = [];    // matchs en corbeille (deletedAt)
 let selected = null; // id normalisé du joueur, ou null = tous
 let inTrash = false; // vue Corbeille
 let page = 1;
-const PAGE_SIZE = 10;
 let playersKey = '';
 let tiersKey = '';
 
@@ -34,37 +37,12 @@ function el(tag, attrs = {}, ...children) {
   return n;
 }
 
-// ---------- agrégation par joueur ----------
-function buildPlayers() {
-  const map = new Map();
-  const sorted = [...matches].sort((a, b) => (a.startedAt || 0) - (b.startedAt || 0));
-  for (const m of sorted) {
-    for (const name of [m.p1, m.p2]) {
-      if (!name) continue;
-      const id = toID(name);
-      const p = map.get(id) || { id, name, count: 0, w: 0, l: 0, last: 0 };
-      p.name = name; // dernier pseudo vu
-      p.count++;
-      p.last = Math.max(p.last, m.startedAt || 0);
-      if (m.status === 'saved' && m.winner) {
-        if (toID(m.winner) === id) p.w++; else p.l++;
-      }
-      map.set(id, p);
-    }
-  }
-  return [...map.values()];
-}
-
+// ---------- joueurs ----------
 function renderPlayers() {
-  const players = buildPlayers();
-  const q = toID($('search').value);
+  const players = buildPlayers(matches);
+  const q = $('search').value;
   const sort = $('playerSort').value;
-  const list = players.filter((p) => !q || p.id.includes(q));
-  list.sort((a, b) => {
-    if (sort === 'count') return b.count - a.count || a.id.localeCompare(b.id);
-    if (sort === 'recent') return b.last - a.last;
-    return a.name.localeCompare(b.name, 'en', { sensitivity: 'base' });
-  });
+  const list = filterPlayers(players, q, sort);
 
   $('allCount').textContent = matches.length;
   $('allBtn').classList.toggle('active', selected === null && !inTrash);
@@ -73,7 +51,7 @@ function renderPlayers() {
   $('trashCount').textContent = trash.length;
 
   // On ne redessine la liste que si elle a vraiment changé.
-  const key = [selected, q, sort, ...list.map((p) => `${p.id}:${p.name}:${p.count}`)].join('|');
+  const key = [selected, toID(q), sort, ...list.map((p) => `${p.id}:${p.name}:${p.count}`)].join('|');
   if (key !== playersKey) {
     playersKey = key;
     const ul = $('playerList');
@@ -130,14 +108,6 @@ function replayCell(m) {
   return el('td', {}, el('div', { class: 'replay-cell' }, statusCell(m), del));
 }
 
-function resultFor(m, pid) {
-  if (m.status !== 'saved') return { text: '—', cls: '' };
-  if (m.tie) return { text: 'Draw', cls: 'tie' };
-  if (!m.winner) return { text: '?', cls: '' };
-  const won = toID(m.winner) === pid;
-  return { text: won ? 'W' : 'L', cls: won ? 'win' : 'loss' };
-}
-
 function renderMatches(players) {
   const tier = $('tierFilter').value;
   const sort = $('matchSort').value;
@@ -146,27 +116,15 @@ function renderMatches(players) {
   if (selected && !player) selected = null;
   if (inTrash && !trash.length) inTrash = false; // corbeille vidée : retour à tous les matchs
 
-  const source = inTrash ? trash : matches;
-  const list = source.filter((m) => (!selected || m.ids?.includes(selected)) && (!tier || m.format === tier));
-
-  const oppOf = (m) => {
-    if (!selected) return '';
-    return toID(m.p1) === selected ? (m.p2 || '') : (m.p1 || '');
-  };
-  list.sort((a, b) => {
-    if (sort === 'opp' && selected) return oppOf(a).localeCompare(oppOf(b), 'en', { sensitivity: 'base' });
-    if (sort === 'tier') return (a.format || '').localeCompare(b.format || '') || (b.startedAt || 0) - (a.startedAt || 0);
-    return (b.startedAt || 0) - (a.startedAt || 0);
-  });
+  const list = sortMatches(filterMatches(inTrash ? trash : matches, selected, tier), sort, selected);
 
   if (inTrash) {
     $('title').textContent = 'Trash';
     $('record').textContent = `${list.length} matches · emptied when the library closes`;
   } else if (player) {
     $('title').textContent = player.name;
-    const total = player.w + player.l;
-    const pct = total ? Math.round((player.w / total) * 100) : 0;
-    $('record').textContent = `${player.count} matches · ${player.w} W – ${player.l} L${total ? ` (${pct}%)` : ''}`;
+    const r = recordOf(player);
+    $('record').textContent = `${player.count} matches · ${r.w} W – ${r.l} L${r.total ? ` (${r.pct}%)` : ''}`;
   } else {
     $('title').textContent = 'All matches';
     $('record').textContent = `${list.length} matches`;
@@ -179,9 +137,9 @@ function renderMatches(players) {
       : ['Date', 'Tier', 'Player 1', 'Player 2', 'Replay'];
   $('thead').replaceChildren(el('tr', {}, ...head.map((h) => el('th', {}, h))));
 
-  const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
-  page = Math.min(Math.max(page, 1), pages);
-  const rows = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((m) => {
+  const pg = paginate(list, page);
+  page = pg.page;
+  const rows = pg.rows.map((m) => {
     const date = m.startedAt ? fmtDate.format(new Date(m.startedAt)) : '—';
     if (inTrash) {
       return el('tr', {},
@@ -193,7 +151,7 @@ function renderMatches(players) {
       );
     }
     if (selected) {
-      const opp = oppOf(m);
+      const opp = opponentOf(m, selected);
       const r = resultFor(m, selected);
       return el('tr', {},
         el('td', { class: 'num' }, date),
@@ -205,24 +163,23 @@ function renderMatches(players) {
         replayCell(m),
       );
     }
-    const isWinner = (name) => !!name && !!m.winner && toID(m.winner) === toID(name);
-    const isLoser = (name) => !!name && !!m.winner && !isWinner(name);
     const pbtn = (name) => name ? el('button', {
-      class: 'plink' + (isWinner(name) ? ' won' : ''),
+      class: 'plink' + (isWinner(m, name) ? ' won' : ''),
       onclick: () => select(toID(name)),
     }, name) : '?';
+    const cellClass = (name) => (isWinner(m, name) ? 'winner' : isLoser(m, name) ? 'loser' : null);
     return el('tr', {},
       el('td', { class: 'num' }, date),
       el('td', {}, el('span', { class: 'tier' }, m.format || '?')),
-      el('td', { class: isWinner(m.p1) ? 'winner' : isLoser(m.p1) ? 'loser' : null }, pbtn(m.p1)),
-      el('td', { class: isWinner(m.p2) ? 'winner' : isLoser(m.p2) ? 'loser' : null }, pbtn(m.p2)),
+      el('td', { class: cellClass(m.p1) }, pbtn(m.p1)),
+      el('td', { class: cellClass(m.p2) }, pbtn(m.p2)),
       replayCell(m),
     );
   });
   $('rows').replaceChildren(...rows);
   $('empty').hidden = list.length > 0;
   $('empty').textContent = inTrash ? 'Trash is empty.' : EMPTY_TEXT;
-  renderPager(pages);
+  renderPager(pg.pages);
 }
 
 // ‹ 1 2 3 … 200 › : masquée s'il n'y a qu'une page.
@@ -231,18 +188,12 @@ function renderPager(pages) {
   nav.hidden = pages <= 1;
   if (pages <= 1) return;
 
-  const shown = new Set([1, pages, page - 1, page, page + 1]);
-  if (page <= 2) [1, 2, 3].forEach((n) => shown.add(n));
-  if (page >= pages - 1) [pages - 2, pages - 1, pages].forEach((n) => shown.add(n));
-  const nums = [...shown].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
-
-  const go = (n) => () => { page = n; renderMatches(buildPlayers()); $('tableWrap').scrollTop = 0; };
+  const go = (n) => () => { page = n; renderMatches(buildPlayers(matches)); $('tableWrap').scrollTop = 0; };
   const items = [el('button', { class: 'pg chevron', title: 'Previous page', disabled: page === 1 ? '' : null, onclick: go(page - 1) }, '‹')];
-  let prev = 0;
-  for (const n of nums) {
-    if (n - prev > 1) items.push(el('span', { class: 'pg-gap' }, '…'));
-    items.push(el('button', { class: 'pg' + (n === page ? ' active' : ''), onclick: go(n) }, String(n)));
-    prev = n;
+  for (const n of pagerItems(page, pages)) {
+    items.push(n === null
+      ? el('span', { class: 'pg-gap' }, '…')
+      : el('button', { class: 'pg' + (n === page ? ' active' : ''), onclick: go(n) }, String(n)));
   }
   items.push(el('button', { class: 'pg chevron', title: 'Next page', disabled: page === pages ? '' : null, onclick: go(page + 1) }, '›'));
   nav.replaceChildren(...items);
@@ -251,7 +202,7 @@ function renderPager(pages) {
 function renderTierFilter() {
   const sel = $('tierFilter');
   const cur = sel.value;
-  const tiers = [...new Set(matches.map((m) => m.format).filter(Boolean))].sort();
+  const tiers = tiersOf(matches);
   const key = tiers.join('|');
   if (key === tiersKey) return;
   tiersKey = key;
@@ -267,9 +218,7 @@ function renderAll() {
 }
 
 async function load() {
-  const all = await allMatches();
-  matches = all.filter((m) => !m.deletedAt);
-  trash = all.filter((m) => m.deletedAt);
+  ({ matches, trash } = splitTrash(await allMatches()));
   renderAll();
 }
 
@@ -351,8 +300,8 @@ $('allBtn').onclick = () => select(null);
 $('trashBtn').onclick = () => { selected = null; inTrash = true; page = 1; renderAll(); };
 $('search').oninput = renderPlayers;
 $('playerSort').onchange = renderPlayers;
-$('tierFilter').onchange = () => { page = 1; renderMatches(buildPlayers()); };
-$('matchSort').onchange = () => { page = 1; renderMatches(buildPlayers()); };
+$('tierFilter').onchange = () => { page = 1; renderMatches(buildPlayers(matches)); };
+$('matchSort').onchange = () => { page = 1; renderMatches(buildPlayers(matches)); };
 
 // Plusieurs matchs peuvent changer d'un coup : on regroupe les rechargements.
 let reloadTimer = null;
