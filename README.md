@@ -21,21 +21,29 @@ Only smogtours matches are tracked, never matches from the main Showdown server.
 
 ## Installation
 
-The extension is not on the Chrome Web Store, so you load it manually. You need [Node.js](https://nodejs.org) 20 or later and Chrome 116 or later.
+The extension is not on the Chrome Web Store, so you load it manually. All you need is Chrome 116 or later.
 
-1. Get the code and build it:
-   ```sh
-   git clone https://github.com/<your-username>/smogtours-watch.git
-   cd smogtours-watch
-   npm install
-   npm run build
-   ```
-2. Open `chrome://extensions` in Chrome.
-3. Turn on **Developer mode** (top right).
-4. Click **Load unpacked** and select the `dist` folder.
-5. Pin the extension to the toolbar to reach the popup easily.
+1. Download `smogtours-watch.zip` from the latest [release](https://github.com/<your-username>/smogtours-watch/releases/latest).
+2. Unzip it to a folder you will keep. Chrome loads the extension from this folder, so don't delete or move it afterwards.
+3. Open `chrome://extensions` in Chrome.
+4. Turn on **Developer mode** (top right).
+5. Click **Load unpacked** and select the unzipped folder (the one that contains `manifest.json`).
+6. Pin the extension to the toolbar to reach the popup easily.
 
-To update, pull the latest code, run `npm run build` again and click the reload button on the extension's card in `chrome://extensions`.
+**To update:** download the new zip, unzip it over the same folder, then click the reload button on the extension's card in `chrome://extensions`. Your library and settings are kept.
+
+### Build from source
+
+To build the extension yourself or change the code, you also need [Node.js](https://nodejs.org) 20 or later.
+
+```sh
+git clone https://github.com/<your-username>/smogtours-watch.git
+cd smogtours-watch
+npm install
+npm run build
+```
+
+Then follow steps 3 to 6 above and select the `dist` folder.
 
 ## Usage
 
