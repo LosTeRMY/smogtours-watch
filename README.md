@@ -23,7 +23,7 @@ Only smogtours matches are tracked, never matches from the main Showdown server.
 
 The extension is not on the Chrome Web Store, so you load it manually. All you need is Chrome 116 or later.
 
-1. Download `smogtours-watch.zip` from the latest [release](https://github.com/<your-username>/smogtours-watch/releases/latest).
+1. Download `smogtours-watch.zip` from the latest [release](https://github.com/LosTeRMY/smogtours-watch/releases/latest).
 2. Unzip it to a folder you will keep. Chrome loads the extension from this folder, so don't delete or move it afterwards.
 3. Open `chrome://extensions` in Chrome.
 4. Turn on **Developer mode** (top right).
@@ -31,6 +31,7 @@ The extension is not on the Chrome Web Store, so you load it manually. All you n
 6. Pin the extension to the toolbar to reach the popup easily.
 
 **To update:** download the new zip, unzip it over the same folder, then click the reload button on the extension's card in `chrome://extensions`. Your library and settings are kept.
+
 ## Usage
 
 1. Click the extension icon to open the popup.
@@ -50,7 +51,7 @@ The extension is not on the Chrome Web Store, so you load it manually. All you n
 Requires Node.js 20+. Stack: React 19, TypeScript, Vite + [CRXJS](https://crxjs.dev), Manifest V3.
 
 ```sh
-git clone https://github.com/<your-username>/smogtours-watch.git
+git clone https://github.com/LosTeRMY/smogtours-watch.git
 cd smogtours-watch
 npm install
 npm run dev        # rebuilds dist/ on every save
